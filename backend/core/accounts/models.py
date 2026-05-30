@@ -11,16 +11,25 @@ class EmployeeProfile(models.Model):
         PROCUREMENT_MANAGER = "procurement_manager", "Procurement Manager"
         OPERATOR = "operator", "Operator"
 
+    class Department(models.TextChoices):
+        PRODUCTION = "production", "Production"
+        INVENTORY = "inventory", "Inventory"
+        SALES = "sales", "Sales"
+        PROCUREMENT = "procurement", "Procurement"
+        HR = "hr", "HR"
+        IT = "it", "IT"
+
     user = models.OneToOneField(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
         related_name="employee_profile",
     )
     role = models.CharField(max_length=32, choices=Role.choices)
+    department = models.CharField(max_length=50, choices=Department.choices)
     phone = models.CharField(max_length=30, blank=True)
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return f"{self.user.get_username()} - {self.get_role_display()}"
+        return f"{self.user.get_username()} - {self.get_role_display()} - {self.get_department_display()}"
