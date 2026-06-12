@@ -25,7 +25,7 @@ class EmployeeProfile(models.Model):
         related_name="employee_profile",
     )
     role = models.CharField(max_length=32, choices=Role.choices)
-    department = models.CharField(max_length=50, choices=Department.choices)
+    department = models.CharField(max_length=50, default=Department.PRODUCTION, choices=Department.choices)
     phone = models.CharField(max_length=30, blank=True)
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
