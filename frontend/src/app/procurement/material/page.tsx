@@ -8,6 +8,16 @@ type CurrentUser = {
   department: string;
 };
 
+type Material = {
+  id: number;
+  sku: string;
+  name: string;
+  description: string;
+  unit: string;
+  standard_cost: number;
+  reorder_level: number;
+};
+
 export default function MaterialPage() {
   const [sku, setSku] = useState("");
   const [name, setName] = useState("");
@@ -18,6 +28,7 @@ export default function MaterialPage() {
   const [isManager, setIsManager] = useState(false);
   const [user, setUser] = useState<CurrentUser | null>(null);
   const [loadingUser, setLoadingUser] = useState(true);
+  const [materials, setMaterials] = useState<Material[]>([]);
 
   useEffect(() => {
     async function loadCurrentUser() {
@@ -49,6 +60,32 @@ export default function MaterialPage() {
     }
 
     loadCurrentUser();
+  }, []);
+
+  useEffect(() => {
+    async function loadMaterials() {
+      const token = localStorage.getItem("access_token");
+
+      if (!token) {
+        return;
+      }
+
+      const res = await fetch("http://127.0.0.1:8000/api/procurement/raw-materials/", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!res.ok) {
+        alert("Failed to load materials");
+        return;
+      }
+
+      const data: Material[] = await res.json();
+      setMaterials(data);
+    }
+
+    loadMaterials();
   }, []);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -87,6 +124,16 @@ export default function MaterialPage() {
       return;
     }
 
+    const savedMaterial: Material = await res.json();
+    setMaterials((current) => [...current, savedMaterial]);
+
+    setSku("");
+    setName("");
+    setDescription("");
+    setUnit("");
+    setStandardCost("");
+    setReorderLevel("");
+    
     alert("Material saved successfully");
   }
 
@@ -192,6 +239,42 @@ export default function MaterialPage() {
           )
         )}
       </div>
+
+      <section className="mx-auto mt-10 max-w-3xl rounded-lg bg-white p-8 shadow-sm">
+        <h2 className="mb-6 text-xl font-bold text-gray-900">Material List</h2>
+        {materials.length === 0 ? (
+          <p className="text-sm text-gray-500">No materials found.</p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full border-collapse text-left text-sm">
+              <thead>
+                <tr className="border-b border-gray-200 text-gray-600">
+                  <th className="py-3 pr-4 font-medium">SKU</th>
+                  <th className="py-3 pr-4 font-medium">Name</th>
+                  <th className="py-3 pr-4 font-medium">Unit</th>
+                  <th className="py-3 pr-4 font-medium">Standard Cost</th>
+                  <th className="py-3 pr-4 font-medium">Reorder Level</th>
+                </tr>
+              </thead>
+              <tbody>
+                {materials.map((material) => (
+                  <tr key={material.id} className="border-b border-gray-100">
+                    <td className="py-3 pr-4 text-gray-900">{material.sku}</td>
+                    <td className="py-3 pr-4 text-gray-900">{material.name}</td>
+                    <td className="py-3 pr-4 text-gray-700">{material.unit}</td>
+                    <td className="py-3 pr-4 text-gray-700">
+                      {material.standard_cost}
+                    </td>
+                    <td className="py-3 pr-4 text-gray-700">
+                      {material.reorder_level}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
     </main>
   );
 }

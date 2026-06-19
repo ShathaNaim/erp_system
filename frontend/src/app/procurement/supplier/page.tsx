@@ -8,7 +8,16 @@ type CurrentUser = {
   department: string;
 };
 
-export default function MaterialPage() {
+type Supplier = {
+  id: number;
+  name: string;
+  contact_name: string;
+  email: string;
+  phone: string;
+  address: string;
+};
+
+export default function SupplierPage() {
   const [name, setName] = useState("");
   const [contact_name, setContactName] = useState("");
   const [email, setEmail] = useState("");
@@ -17,6 +26,7 @@ export default function MaterialPage() {
   const [isManager, setIsManager] = useState(false);
   const [user, setUser] = useState<CurrentUser | null>(null);
   const [loadingUser, setLoadingUser] = useState(true);
+  const [suppliers, setSuppliers] = useState<Supplier[]>([]);
 
   useEffect(() => {
     async function loadCurrentUser() {
@@ -50,13 +60,39 @@ export default function MaterialPage() {
     loadCurrentUser();
   }, []);
 
+  useEffect(() => {
+    async function loadSuppliers() {
+      const token = localStorage.getItem("access_token");
+
+      if (!token) {
+        return;
+      }
+
+      const res = await fetch("http://127.0.0.1:8000/api/procurement/suppliers/", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!res.ok) {
+        alert("Failed to load suppliers");
+        return;
+      }
+
+      const data: Supplier[] = await res.json();
+      setSuppliers(data);
+    }
+
+    loadSuppliers();
+  }, []);
+
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
 
     const token = localStorage.getItem("access_token");
 
     if (!isManager) {
-      alert("You do not have permission to create materials");
+      alert("You do not have permission to create suppliers");
       return;
     }
 
@@ -72,12 +108,11 @@ export default function MaterialPage() {
         email,
         phone,
         address,
-  
       }),
     });
 
     if (res.status === 403) {
-      alert("You do not have permission to create materials");
+      alert("You do not have permission to create suppliers");
       return;
     }
 
@@ -85,6 +120,15 @@ export default function MaterialPage() {
       alert("Failed to save supplier");
       return;
     }
+
+    const savedSupplier: Supplier = await res.json();
+    setSuppliers((current) => [...current, savedSupplier]);
+
+    setName("");
+    setContactName("");
+    setEmail("");
+    setPhone("");
+    setAddress("");
 
     alert("Supplier saved successfully");
   }
@@ -181,6 +225,42 @@ export default function MaterialPage() {
           )
         )}
       </div>
+
+      <section className="mx-auto mt-10 max-w-3xl rounded-lg bg-white p-8 shadow-sm">
+        <h2 className="mb-6 text-xl font-bold text-gray-900">Supplier List</h2>
+        {suppliers.length === 0 ? (
+          <p className="text-sm text-gray-500">No suppliers found.</p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full border-collapse text-left text-sm">
+              <thead>
+                <tr className="border-b border-gray-200 text-gray-600">
+                  <th className="py-3 pr-4 font-medium">Name</th>
+                  <th className="py-3 pr-4 font-medium">Contact</th>
+                  <th className="py-3 pr-4 font-medium">Email</th>
+                  <th className="py-3 pr-4 font-medium">Phone</th>
+                </tr>
+              </thead>
+              <tbody>
+                {suppliers.map((supplier) => (
+                  <tr key={supplier.id} className="border-b border-gray-100">
+                    <td className="py-3 pr-4 text-gray-900">{supplier.name}</td>
+                    <td className="py-3 pr-4 text-gray-700">
+                      {supplier.contact_name || "-"}
+                    </td>
+                    <td className="py-3 pr-4 text-gray-700">
+                      {supplier.email || "-"}
+                    </td>
+                    <td className="py-3 pr-4 text-gray-700">
+                      {supplier.phone || "-"}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
     </main>
   );
 }
