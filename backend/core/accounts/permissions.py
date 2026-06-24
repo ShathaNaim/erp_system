@@ -19,3 +19,22 @@ class IsProcurementEmployee(BasePermission):
             and request.user.employee_profile.department == "procurement"
         )
 
+
+class IsSalesEmployee(BasePermission):
+    def has_permission(self, request, view):
+        return (
+            request.user
+            and request.user.is_authenticated
+            and hasattr(request.user, "employee_profile")
+            and request.user.employee_profile.department == "sales"
+        )
+    
+class IsSalesManager(BasePermission):
+    def has_permission(self, request, view):
+        return (
+            request.user
+            and request.user.is_authenticated
+            and hasattr(request.user, "employee_profile")
+            and request.user.employee_profile.role == "sales_manager"
+        )
+

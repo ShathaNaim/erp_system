@@ -2,9 +2,18 @@ from django.db import models
 
 
 class FinishedProduct(models.Model):
+    class ProductType(models.TextChoices):
+        STANDARD = "standard", "Standard"
+        CUSTOM = "custom", "Custom"
+        
     sku = models.CharField(max_length=80, unique=True)
     name = models.CharField(max_length=255)
     description = models.TextField(blank=True)
+    product_type = models.CharField(
+        max_length=32,
+        choices=ProductType.choices,
+        default=ProductType.STANDARD,
+    )
     unit = models.CharField(max_length=30, default="piece")
     selling_price = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     is_active = models.BooleanField(default=True)
