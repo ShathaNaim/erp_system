@@ -47,6 +47,10 @@ export default function Navbar() {
             Sales
           </Link>
 
+        <Link href="/production" className="text-gray-700 hover:text-gray-900">
+              Production
+          </Link>
+
 
           {isLoggedIn && (
             <Link href="/profile" className="text-gray-700 hover:text-gray-900">

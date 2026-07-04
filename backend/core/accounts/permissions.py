@@ -38,3 +38,20 @@ class IsSalesManager(BasePermission):
             and request.user.employee_profile.role == "sales_manager"
         )
 
+class IsProductionEmployee(BasePermission):
+    def has_permission(self, request, view):
+        return (
+            request.user
+            and request.user.is_authenticated
+            and hasattr(request.user, "employee_profile")
+            and request.user.employee_profile.department == "production"
+        )
+    
+class IsProductionManager(BasePermission):
+    def has_permission(self, request, view):
+        return (
+            request.user
+            and request.user.is_authenticated
+            and hasattr(request.user, "employee_profile")
+            and request.user.employee_profile.role == "production_manager"
+        )
