@@ -18,12 +18,18 @@ function getServerAuthSnapshot() {
 
 export default function Navbar() {
   const router = useRouter();
-  usePathname();
+  const pathname = usePathname();
   const isLoggedIn = useSyncExternalStore(
     subscribe,
     getAuthSnapshot,
     getServerAuthSnapshot
   );
+  const links = [
+    { href: "/procurement", label: "Procurement" },
+    { href: "/sales", label: "Sales" },
+    { href: "/production", label: "Production" },
+    { href: "/inventory", label: "Inventory" },
+  ];
 
   function handleLogout() {
     localStorage.removeItem("access_token");
@@ -32,28 +38,49 @@ export default function Navbar() {
   }
 
   return (
-    <nav className="border-b border-gray-200 bg-white">
-      <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
-        <Link href="/" className="text-lg font-bold text-gray-900">
-          ERP System
+    <nav className="sticky top-0 z-20 border-b border-gray-200 bg-white/95 backdrop-blur">
+      <div className="mx-auto flex max-w-6xl flex-col gap-3 px-6 py-4 md:flex-row md:items-center md:justify-between">
+        <Link href="/" className="flex items-center gap-3">
+          <span className="flex size-9 items-center justify-center rounded-lg bg-emerald-600 text-sm font-bold text-white">
+            ERP
+          </span>
+          <span>
+            <span className="block text-base font-bold text-gray-950">
+              ERP System
+            </span>
+            <span className="block text-xs text-gray-500">
+              Operations workspace
+            </span>
+          </span>
         </Link>
 
-        <div className="flex items-center gap-4 text-sm">
-          <Link href="/procurement" className="text-gray-700 hover:text-gray-900">
-            Procurement
-          </Link>
-
-           <Link href="/sales" className="text-gray-700 hover:text-gray-900">
-            Sales
-          </Link>
-
-        <Link href="/production" className="text-gray-700 hover:text-gray-900">
-              Production
-          </Link>
-
+        <div className="flex flex-wrap items-center gap-2 text-sm">
+          {links.map((link) => {
+            const isActive = pathname.startsWith(link.href);
+            return (
+              <Link
+                key={link.href}
+                href={link.href}
+                className={`rounded-lg px-3 py-2 font-medium transition ${
+                  isActive
+                    ? "bg-emerald-50 text-emerald-700"
+                    : "text-gray-600 hover:bg-gray-100 hover:text-gray-950"
+                }`}
+              >
+                {link.label}
+              </Link>
+            );
+          })}
 
           {isLoggedIn && (
-            <Link href="/profile" className="text-gray-700 hover:text-gray-900">
+            <Link
+              href="/profile"
+              className={`rounded-lg px-3 py-2 font-medium transition ${
+                pathname.startsWith("/profile")
+                  ? "bg-emerald-50 text-emerald-700"
+                  : "text-gray-600 hover:bg-gray-100 hover:text-gray-950"
+              }`}
+            >
               Profile
             </Link>
           )}
@@ -62,14 +89,14 @@ export default function Navbar() {
             <button
               type="button"
               onClick={handleLogout}
-              className="rounded-lg bg-gray-900 px-4 py-2 text-white hover:bg-gray-800"
+              className="rounded-lg bg-gray-900 px-4 py-2 font-semibold text-white transition hover:bg-gray-800"
             >
               Logout
             </button>
           ) : (
             <Link
               href="/login"
-              className="rounded-lg bg-emerald-600 px-4 py-2 text-white hover:bg-emerald-700"
+              className="rounded-lg bg-emerald-600 px-4 py-2 font-semibold text-white transition hover:bg-emerald-700"
             >
               Login
             </Link>

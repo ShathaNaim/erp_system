@@ -14,6 +14,9 @@ export default function OrderPage() {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [products, setProducts] = useState<FinishedProduct[]>([]);
   const [orders, setOrders] = useState<SalesOrder[]>([]);
+  const [confirmingOrderId, setConfirmingOrderId] = useState<number | null>(
+    null
+  );
 
   useEffect(() => {
     async function loadOrderData() {
@@ -46,8 +49,37 @@ export default function OrderPage() {
     loadOrderData();
   }, []);
 
+  async function confirmSalesOrder(order: SalesOrder) {
+    const token = localStorage.getItem("access_token");
+    if (!token) {
+      alert("You must be logged in to confirm sales orders");
+      return;
+    }
+
+    setConfirmingOrderId(order.id);
+
+    try {
+      const res = await fetch(`${salesApi}/sales-orders/${order.id}/confirm/`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (!res.ok) {
+        alert("Failed to confirm sales order");
+        return;
+      }
+
+      const updatedOrder: SalesOrder = await res.json();
+      setOrders((current) =>
+        current.map((item) => (item.id === updatedOrder.id ? updatedOrder : item))
+      );
+    } finally {
+      setConfirmingOrderId(null);
+    }
+  }
+
   return (
-    <main className="min-h-screen bg-gray-100 px-6 py-10">
+    <main className="min-h-screen bg-gray-50 px-6 py-10">
       <div className="mx-auto max-w-5xl">
         <Link
           href="/sales"
@@ -88,6 +120,7 @@ export default function OrderPage() {
                     <th className="py-3 pr-4 font-medium">Order Date</th>
                     <th className="py-3 pr-4 font-medium">Status</th>
                     <th className="py-3 pr-4 font-medium">Items</th>
+                    <th className="py-3 pr-4 font-medium">Action</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -109,6 +142,23 @@ export default function OrderPage() {
                       </td>
                       <td className="py-3 pr-4 text-gray-700">
                         {order.lines.length}
+                      </td>
+                      <td className="py-3 pr-4 text-gray-700">
+                        <button
+                          type="button"
+                          onClick={() => confirmSalesOrder(order)}
+                          disabled={
+                            confirmingOrderId === order.id ||
+                            ["in_production", "ready", "shipped", "cancelled"].includes(
+                              order.status
+                            )
+                          }
+                          className="rounded-lg bg-gray-900 px-3 py-2 text-xs font-semibold text-white hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                          {confirmingOrderId === order.id
+                            ? "Confirming..."
+                            : "Confirm"}
+                        </button>
                       </td>
                     </tr>
                   ))}

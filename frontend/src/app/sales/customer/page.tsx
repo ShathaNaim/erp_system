@@ -33,7 +33,7 @@ export default function CustomerPage() {
   }, []);
 
   return (
-    <main className="min-h-screen bg-gray-100 px-6 py-10">
+    <main className="min-h-screen bg-gray-50 px-6 py-10">
       <div className="mx-auto max-w-3xl">
         <Link
           href="/sales"

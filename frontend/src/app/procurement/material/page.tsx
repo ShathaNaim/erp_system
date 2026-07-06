@@ -67,7 +67,7 @@ export default function MaterialPage() {
   }, []);
 
   return (
-    <main className="min-h-screen bg-gray-100 px-6 py-10">
+    <main className="min-h-screen bg-gray-50 px-6 py-10">
       <div className="mx-auto max-w-3xl rounded-lg bg-white p-8 shadow-sm">
         <h1 className="mb-6 text-2xl font-bold text-gray-900">Add Material</h1>
         {loadingUser ? (

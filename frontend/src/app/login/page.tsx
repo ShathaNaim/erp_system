@@ -42,7 +42,7 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="min-h-screen bg-gray-100 px-6 py-10">
+    <main className="min-h-screen bg-gray-50 px-6 py-10">
       <div className="mx-auto min-h-[calc(100vh-8rem)] max-w-5xl items-center gap-8">
    
 

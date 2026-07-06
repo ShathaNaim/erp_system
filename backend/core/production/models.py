@@ -156,13 +156,9 @@ class MaterialConsumption(models.Model):
         on_delete=models.CASCADE,
         related_name="material_consumptions",
     )
-    raw_material = models.ForeignKey(
-        "procurement.RawMaterial",
-        on_delete=models.PROTECT,
-        related_name="production_consumptions",
-    )
+    raw_material_name = models.CharField(max_length=255)
     quantity = models.DecimalField(max_digits=12, decimal_places=3)
     consumed_at = models.DateTimeField()
 
     def __str__(self):
-        return f"{self.production_order.order_number} - {self.raw_material.name}"
+        return f"{self.production_order.order_number} - {self.raw_material_name}"

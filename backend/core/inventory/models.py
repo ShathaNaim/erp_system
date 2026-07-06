@@ -1,6 +1,6 @@
 from django.core.exceptions import ValidationError
 from django.db import models
-from django.db.models import Q
+from django.db.models import Q, Sum
 
 
 class Warehouse(models.Model):
@@ -55,6 +55,23 @@ class StockLot(models.Model):
             raise ValidationError(
                 "A stock lot must reference either a raw material or a finished product."
             )
+
+    @classmethod
+    def available_finished_quantity(cls, product):
+        total = cls.objects.filter(finished_product=product).aggregate(
+            total=Sum("quantity_on_hand")
+        )["total"]
+        return total or 0
+
+    @classmethod
+    def finished_product_shortage(cls, product, required_quantity):
+        available_quantity = cls.available_finished_quantity(product)
+        shortage = required_quantity - available_quantity
+
+        if shortage <= 0:
+            return 0
+
+        return shortage
 
     def __str__(self):
         item = self.raw_material or self.finished_product

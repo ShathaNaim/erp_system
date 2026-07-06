@@ -4,6 +4,11 @@ from rest_framework import serializers
 
 from production.models import FinishedProduct
 from .models import Customer, SalesOrder, SalesOrderLine
+from .services import (
+    get_available_finished_stock,
+    get_required_production_quantity,
+    get_sales_order_line_route,
+)
 
 
 class CustomerSerializer(serializers.ModelSerializer):
@@ -48,6 +53,9 @@ class CustomProductSerializer(serializers.Serializer):
 
 class SalesOrderLineSerializer(serializers.ModelSerializer):
     custom_product = CustomProductSerializer(write_only=True, required=False)
+    available_stock = serializers.SerializerMethodField()
+    route = serializers.SerializerMethodField()
+    production_required_quantity = serializers.SerializerMethodField()
 
     class Meta:
         model = SalesOrderLine
@@ -59,12 +67,38 @@ class SalesOrderLineSerializer(serializers.ModelSerializer):
             "quantity",
             "unit_price",
             "notes",
+            "available_stock",
+            "route",
+            "production_required_quantity",
         ]
-        read_only_fields = ["id"]
+        read_only_fields = [
+            "id",
+            "available_stock",
+            "route",
+            "production_required_quantity",
+        ]
         extra_kwargs = {
             "sales_order": {"required": False},
             "product": {"required": False},
         }
+
+    def get_available_stock(self, line):
+        if not line.product_id:
+            return 0
+
+        return get_available_finished_stock(line.product)
+
+    def get_route(self, line):
+        if not line.product_id:
+            return None
+
+        return get_sales_order_line_route(line)
+
+    def get_production_required_quantity(self, line):
+        if not line.product_id:
+            return 0
+
+        return get_required_production_quantity(line)
 
     def validate(self, attrs):
         product = attrs.get("product")

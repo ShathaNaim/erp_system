@@ -1,7 +1,7 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 
 type ProcurementStats = {
   orders: number;
@@ -15,8 +15,32 @@ const initialStats: ProcurementStats = {
   materials: 0,
 };
 
+const procurementSections = [
+  {
+    href: "/procurement/supplier",
+    title: "Suppliers",
+    label: "Partners",
+    statKey: "suppliers",
+    description: "Maintain supplier records for purchase orders and receipts.",
+  },
+  {
+    href: "/procurement/material",
+    title: "Raw Materials",
+    label: "Materials",
+    statKey: "materials",
+    description:
+      "Create raw materials that production can consume from inventory.",
+  },
+  {
+    href: "/procurement/purchase-order",
+    title: "Purchase Orders",
+    label: "Supply",
+    statKey: "orders",
+    description: "Order raw materials and track incoming supply from vendors.",
+  },
+] as const;
+
 export default function ProcurementPage() {
-  const router = useRouter();
   const [stats, setStats] = useState<ProcurementStats>(initialStats);
   const [loading, setLoading] = useState(true);
 
@@ -69,44 +93,50 @@ export default function ProcurementPage() {
     loadStats();
   }, []);
 
-  const cards = [
-    { label: "Orders", value: stats.orders },
-    { label: "Suppliers", value: stats.suppliers },
-    { label: "Materials", value: stats.materials },
-  ];
-
   return (
-    <main className="min-h-screen bg-gray-100 px-6 py-10">
-      <div className="mx-auto max-w-5xl space-y-8">
-        <div className="flex flex-col gap-3 sm:flex-row">
-          <button
-            onClick={() => router.push("/procurement/supplier")}
-            className="rounded-lg bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-700"
-          >
-            Add New Supplier
-          </button>
-          <button
-            onClick={() => router.push("/procurement/material")}
-            className="rounded-lg bg-emerald-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-emerald-700"
-          >
-            Add New Material
-          </button>
-          <button
-            onClick={() => router.push("/procurement/purchase-order")}
-            className="rounded-lg bg-violet-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-violet-700"
-          >
-            Add New Purchase Order
-          </button>
-        </div>
+    <main className="min-h-screen bg-gray-50 px-6 py-10">
+      <div className="mx-auto max-w-6xl space-y-8">
+        <section className="rounded-lg border border-gray-200 bg-white p-8 shadow-sm">
+          <p className="text-sm font-semibold text-emerald-700">
+            Procurement
+          </p>
+          <h1 className="mt-3 max-w-3xl text-3xl font-bold text-gray-950">
+            Manage suppliers, raw materials, and purchase orders for production.
+          </h1>
+          <p className="mt-4 max-w-2xl text-sm leading-6 text-gray-600">
+            Procurement keeps the material side of the ERP ready. Create
+            suppliers, define raw materials, and prepare purchase orders for
+            incoming supply.
+          </p>
+        </section>
 
-        <section className="grid gap-4 sm:grid-cols-3">
-          {cards.map((card) => (
-            <div key={card.label} className="rounded-lg bg-white p-6 shadow-sm">
-              <p className="text-sm text-gray-500">{card.label}</p>
-              <p className="mt-3 text-3xl font-bold text-gray-900">
-                {loading ? "..." : card.value}
+        <section className="grid gap-4 md:grid-cols-3">
+          {procurementSections.map((section) => (
+            <Link
+              key={section.href}
+              href={section.href}
+              className="rounded-lg border border-gray-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:border-emerald-200 hover:shadow-md"
+            >
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <p className="text-xs font-semibold uppercase text-gray-500">
+                    {section.label}
+                  </p>
+                  <h2 className="mt-2 text-lg font-bold text-gray-950">
+                    {section.title}
+                  </h2>
+                </div>
+                <span className="rounded-lg bg-emerald-50 px-3 py-1 text-sm font-semibold text-emerald-700">
+                  Open
+                </span>
+              </div>
+              <p className="mt-4 text-sm leading-6 text-gray-600">
+                {section.description}
               </p>
-            </div>
+              <p className="mt-5 text-3xl font-bold text-gray-950">
+                {loading ? "..." : stats[section.statKey]}
+              </p>
+            </Link>
           ))}
         </section>
       </div>
