@@ -1,3 +1,5 @@
+from django.db.models import Sum
+
 from production.models import FinishedProduct
 from procurement.models import RawMaterial
 
@@ -6,6 +8,13 @@ from .models import StockLot, StockMovement, Warehouse
 
 def get_finished_product_available_quantity(product):
     return StockLot.available_finished_quantity(product)
+
+
+def get_raw_material_available_quantity(raw_material):
+    total = StockLot.objects.filter(raw_material=raw_material).aggregate(
+        total=Sum("quantity_on_hand")
+    )["total"]
+    return total or 0
 
 
 def get_finished_product_shortage(product, required_quantity):
@@ -89,7 +98,32 @@ def receive_finished_product_from_production(
         notes="Finished goods received from production.",
     )
 
+    mark_sales_order_ready_if_fulfilled(production_order)
+
     return stock_lot
+
+
+def mark_sales_order_ready_if_fulfilled(production_order):
+    from sales.models import SalesOrder
+
+    if not production_order.sales_order_line_id:
+        return None
+
+    sales_order = production_order.sales_order_line.sales_order
+
+    if sales_order.status in [SalesOrder.Status.SHIPPED, SalesOrder.Status.CANCELLED]:
+        return sales_order
+
+    has_shortage = any(
+        check_sales_order_line_availability(line)["shortage_quantity"] > 0
+        for line in sales_order.lines.select_related("product")
+    )
+
+    if not has_shortage:
+        sales_order.status = SalesOrder.Status.READY
+        sales_order.save(update_fields=["status", "updated_at"])
+
+    return sales_order
 
 
 def find_raw_material_by_name(raw_material_name):
@@ -186,3 +220,62 @@ def ship_sales_order(sales_order):
     sales_order.save(update_fields=["status", "updated_at"])
 
     return sales_order
+
+
+def receive_purchase_order(purchase_order):
+    from django.utils import timezone
+
+    from procurement.models import MaterialReceipt, MaterialReceiptLine, PurchaseOrder
+
+    if purchase_order.status == PurchaseOrder.Status.RECEIVED:
+        raise ValueError("Purchase order has already been received.")
+
+    warehouse = get_default_warehouse()
+    occurred_at = timezone.now()
+    receipt, _ = MaterialReceipt.objects.get_or_create(
+        receipt_number=f"RCPT-{purchase_order.order_number}",
+        defaults={
+            "purchase_order": purchase_order,
+            "supplier": purchase_order.supplier,
+            "received_at": occurred_at,
+            "notes": f"Received purchase order {purchase_order.order_number}.",
+        },
+    )
+
+    for line in purchase_order.lines.select_related("raw_material"):
+        MaterialReceiptLine.objects.get_or_create(
+            receipt=receipt,
+            purchase_order_line=line,
+            raw_material=line.raw_material,
+            defaults={
+                "quantity_received": line.quantity,
+                "unit_cost": line.unit_price,
+                "lot_number": purchase_order.order_number,
+            },
+        )
+
+        stock_lot, _ = StockLot.objects.get_or_create(
+            warehouse=warehouse,
+            raw_material=line.raw_material,
+            finished_product=None,
+            lot_number=purchase_order.order_number,
+            defaults={"quantity_on_hand": 0},
+        )
+        stock_lot.quantity_on_hand += line.quantity
+        stock_lot.save(update_fields=["quantity_on_hand", "updated_at"])
+
+        StockMovement.objects.create(
+            warehouse=warehouse,
+            stock_lot=stock_lot,
+            raw_material=line.raw_material,
+            movement_type=StockMovement.MovementType.MATERIAL_RECEIPT,
+            quantity=line.quantity,
+            occurred_at=occurred_at,
+            reference=purchase_order.order_number,
+            notes=f"Received from purchase order {purchase_order.order_number}.",
+        )
+
+    purchase_order.status = PurchaseOrder.Status.RECEIVED
+    purchase_order.save(update_fields=["status", "updated_at"])
+
+    return purchase_order

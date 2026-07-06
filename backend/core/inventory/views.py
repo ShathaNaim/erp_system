@@ -6,12 +6,14 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from production.models import FinishedProduct
+from procurement.models import RawMaterial
 from sales.models import SalesOrder
 
 from .serializer import (
     FinishedProductInventoryCheckRequestSerializer,
     FinishedProductInventoryCheckSerializer,
     FinishedProductStockSerializer,
+    RawMaterialStockSerializer,
     SalesOrderInventoryLineCheckSerializer,
 )
 from .services import (
@@ -24,6 +26,12 @@ from .services import (
 class FinishedProductStockListView(ListAPIView):
     queryset = FinishedProduct.objects.filter(is_active=True).order_by("name")
     serializer_class = FinishedProductStockSerializer
+    permission_classes = [IsAuthenticated]
+
+
+class RawMaterialStockListView(ListAPIView):
+    queryset = RawMaterial.objects.filter(is_active=True).order_by("name")
+    serializer_class = RawMaterialStockSerializer
     permission_classes = [IsAuthenticated]
 
 

@@ -1,8 +1,12 @@
 from rest_framework import serializers
 
 from production.models import FinishedProduct
+from procurement.models import RawMaterial
 
-from .services import get_finished_product_available_quantity
+from .services import (
+    get_finished_product_available_quantity,
+    get_raw_material_available_quantity,
+)
 
 
 class FinishedProductStockSerializer(serializers.ModelSerializer):
@@ -21,6 +25,24 @@ class FinishedProductStockSerializer(serializers.ModelSerializer):
 
     def get_available_quantity(self, product):
         return get_finished_product_available_quantity(product)
+
+
+class RawMaterialStockSerializer(serializers.ModelSerializer):
+    available_quantity = serializers.SerializerMethodField()
+
+    class Meta:
+        model = RawMaterial
+        fields = [
+            "id",
+            "sku",
+            "name",
+            "unit",
+            "reorder_level",
+            "available_quantity",
+        ]
+
+    def get_available_quantity(self, raw_material):
+        return get_raw_material_available_quantity(raw_material)
 
 
 class FinishedProductInventoryCheckRequestSerializer(serializers.Serializer):

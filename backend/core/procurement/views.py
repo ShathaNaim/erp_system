@@ -1,7 +1,10 @@
-from django.shortcuts import render
 from .serializer import RawMaterialSerializer,SupplierSerializer,PurchaseOrderSerializer
 from .models import RawMaterial, Supplier,PurchaseOrder
+from inventory.services import receive_purchase_order
 from rest_framework import viewsets
+from rest_framework.decorators import action
+from rest_framework import status
+from rest_framework.response import Response
 from accounts.permissions import IsProcurementManager,IsProcurementEmployee
 from rest_framework.permissions import IsAuthenticated
 # Create your views here.
@@ -31,4 +34,18 @@ class PurchaseOrderViewSet(viewsets.ModelViewSet):
     queryset = PurchaseOrder.objects.all()
     serializer_class = PurchaseOrderSerializer
     permission_classes = [IsAuthenticated,IsProcurementEmployee]
+
+    @action(detail=True, methods=["post"])
+    def receive(self, request, pk=None):
+        purchase_order = self.get_object()
+        try:
+            purchase_order = receive_purchase_order(purchase_order)
+        except ValueError as error:
+            return Response(
+                {"detail": str(error)},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        serializer = self.get_serializer(purchase_order)
+        return Response(serializer.data)
 

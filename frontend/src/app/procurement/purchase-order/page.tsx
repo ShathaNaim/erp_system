@@ -7,6 +7,7 @@ import PurchaseOrderForm, {
 
 export default function PurchaseOrderPage() {
   const [purchaseOrders, setPurchaseOrders] = useState<SavedPurchaseOrder[]>([]);
+  const [receivingOrderId, setReceivingOrderId] = useState<number | null>(null);
 
   useEffect(() => {
     async function loadPurchaseOrders() {
@@ -33,6 +34,43 @@ export default function PurchaseOrderPage() {
 
     loadPurchaseOrders();
   }, []);
+
+  async function receivePurchaseOrder(purchaseOrder: SavedPurchaseOrder) {
+    const token = localStorage.getItem("access_token");
+
+    if (!token) {
+      alert("You must be logged in to receive purchase orders");
+      return;
+    }
+
+    setReceivingOrderId(purchaseOrder.id);
+
+    try {
+      const res = await fetch(
+        `http://127.0.0.1:8000/api/procurement/purchase-orders/${purchaseOrder.id}/receive/`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (!res.ok) {
+        alert("Failed to receive purchase order");
+        return;
+      }
+
+      const updatedOrder: SavedPurchaseOrder = await res.json();
+      setPurchaseOrders((current) =>
+        current.map((order) =>
+          order.id === updatedOrder.id ? updatedOrder : order
+        )
+      );
+    } finally {
+      setReceivingOrderId(null);
+    }
+  }
 
   return (
     <main className="min-h-screen bg-gray-50 px-6 py-10">
@@ -64,6 +102,7 @@ export default function PurchaseOrderPage() {
                   <th className="py-3 pr-4 font-medium">Order Date</th>
                   <th className="py-3 pr-4 font-medium">Status</th>
                   <th className="py-3 pr-4 font-medium">Lines</th>
+                  <th className="py-3 pr-4 font-medium">Action</th>
                 </tr>
               </thead>
               <tbody>
@@ -86,6 +125,23 @@ export default function PurchaseOrderPage() {
                     </td>
                     <td className="py-3 pr-4 text-gray-700">
                       {purchaseOrder.lines.length}
+                    </td>
+                    <td className="py-3 pr-4 text-gray-700">
+                      <button
+                        type="button"
+                        onClick={() => receivePurchaseOrder(purchaseOrder)}
+                        disabled={
+                          receivingOrderId === purchaseOrder.id ||
+                          ["received", "cancelled"].includes(
+                            purchaseOrder.status
+                          )
+                        }
+                        className="rounded-lg bg-emerald-600 px-3 py-2 text-xs font-semibold text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        {receivingOrderId === purchaseOrder.id
+                          ? "Receiving..."
+                          : "Mark Received"}
+                      </button>
                     </td>
                   </tr>
                 ))}
