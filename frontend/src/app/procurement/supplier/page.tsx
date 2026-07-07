@@ -16,6 +16,14 @@ export default function SupplierPage() {
   const [user, setUser] = useState<CurrentUser | null>(null);
   const [loadingUser, setLoadingUser] = useState(true);
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
+  const [editingSupplier, setEditingSupplier] = useState<Supplier | null>(null);
+  const [editForm, setEditForm] = useState({
+    name: "",
+    contact_name: "",
+    email: "",
+    phone: "",
+    address: "",
+  });
 
   useEffect(() => {
     async function loadCurrentUser() {
@@ -35,7 +43,9 @@ export default function SupplierPage() {
 
         const data: CurrentUser = await res.json();
         setUser(data);
-        setIsManager(data.role === "procurement_manager");
+        setIsManager(
+          data.role === "admin" || data.role === "procurement_manager"
+        );
       } finally {
         setLoadingUser(false);
       }
@@ -66,6 +76,76 @@ export default function SupplierPage() {
     loadSuppliers();
   }, []);
 
+  function startEditingSupplier(supplier: Supplier) {
+    setEditingSupplier(supplier);
+    setEditForm({
+      name: supplier.name,
+      contact_name: supplier.contact_name,
+      email: supplier.email,
+      phone: supplier.phone,
+      address: supplier.address,
+    });
+  }
+
+  async function updateSupplier(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    if (!editingSupplier) return;
+
+    const token = localStorage.getItem("access_token");
+    if (!token) return;
+
+    const res = await fetch(
+      `http://127.0.0.1:8000/api/procurement/suppliers/${editingSupplier.id}/`,
+      {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(editForm),
+      }
+    );
+
+    if (!res.ok) {
+      alert("Failed to update supplier");
+      return;
+    }
+
+    const updatedSupplier: Supplier = await res.json();
+    setSuppliers((current) =>
+      current.map((supplier) =>
+        supplier.id === updatedSupplier.id ? updatedSupplier : supplier
+      )
+    );
+    setEditingSupplier(null);
+  }
+
+  async function deleteSupplier(supplier: Supplier) {
+    const confirmed = window.confirm(`Delete supplier "${supplier.name}"?`);
+    if (!confirmed) return;
+
+    const token = localStorage.getItem("access_token");
+    if (!token) return;
+
+    const res = await fetch(
+      `http://127.0.0.1:8000/api/procurement/suppliers/${supplier.id}/`,
+      {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      }
+    );
+
+    if (!res.ok) {
+      const error = await res.json().catch(() => null);
+      alert(error?.detail ?? "Failed to delete supplier");
+      return;
+    }
+
+    setSuppliers((current) =>
+      current.filter((item) => item.id !== supplier.id)
+    );
+  }
+
   return (
     <main className="min-h-screen bg-gray-50 px-6 py-10">
       <div className="mx-auto max-w-3xl rounded-lg bg-white p-8 shadow-sm">
@@ -89,11 +169,84 @@ export default function SupplierPage() {
         ) : (
           !loadingUser && (
             <p className="rounded-lg bg-amber-50 px-4 py-3 text-sm text-amber-700">
-              Only procurement managers can create suppliers.
+              Only admins and procurement managers can create suppliers.
             </p>
           )
         )}
       </div>
+
+      {editingSupplier && (
+        <section className="mx-auto mt-10 max-w-3xl rounded-lg bg-white p-8 shadow-sm">
+          <div className="mb-6 flex items-center justify-between gap-4">
+            <h2 className="text-xl font-bold text-gray-900">Edit Supplier</h2>
+            <button
+              type="button"
+              onClick={() => setEditingSupplier(null)}
+              className="rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
+            >
+              Cancel
+            </button>
+          </div>
+          <form onSubmit={updateSupplier} className="space-y-4">
+            <div className="grid gap-4 md:grid-cols-2">
+              <input
+                type="text"
+                value={editForm.name}
+                onChange={(e) =>
+                  setEditForm((current) => ({ ...current, name: e.target.value }))
+                }
+                className="rounded-lg border border-gray-300 px-3 py-2"
+                placeholder="Name"
+                required
+              />
+              <input
+                type="text"
+                value={editForm.contact_name}
+                onChange={(e) =>
+                  setEditForm((current) => ({
+                    ...current,
+                    contact_name: e.target.value,
+                  }))
+                }
+                className="rounded-lg border border-gray-300 px-3 py-2"
+                placeholder="Contact"
+              />
+              <input
+                type="email"
+                value={editForm.email}
+                onChange={(e) =>
+                  setEditForm((current) => ({ ...current, email: e.target.value }))
+                }
+                className="rounded-lg border border-gray-300 px-3 py-2"
+                placeholder="Email"
+              />
+              <input
+                type="tel"
+                value={editForm.phone}
+                onChange={(e) =>
+                  setEditForm((current) => ({ ...current, phone: e.target.value }))
+                }
+                className="rounded-lg border border-gray-300 px-3 py-2"
+                placeholder="Phone"
+              />
+            </div>
+            <textarea
+              value={editForm.address}
+              onChange={(e) =>
+                setEditForm((current) => ({ ...current, address: e.target.value }))
+              }
+              className="w-full rounded-lg border border-gray-300 px-3 py-2"
+              placeholder="Address"
+            />
+            <button
+              type="submit"
+              className="rounded-lg bg-emerald-600 px-5 py-2 text-white hover:bg-emerald-700"
+            >
+              Save Changes
+            </button>
+          </form>
+        </section>
+      )}
 
       <section className="mx-auto mt-10 max-w-3xl rounded-lg bg-white p-8 shadow-sm">
         <h2 className="mb-6 text-xl font-bold text-gray-900">Supplier List</h2>
@@ -108,6 +261,7 @@ export default function SupplierPage() {
                   <th className="py-3 pr-4 font-medium">Contact</th>
                   <th className="py-3 pr-4 font-medium">Email</th>
                   <th className="py-3 pr-4 font-medium">Phone</th>
+                  <th className="py-3 pr-4 font-medium">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -122,6 +276,24 @@ export default function SupplierPage() {
                     </td>
                     <td className="py-3 pr-4 text-gray-700">
                       {supplier.phone || "-"}
+                    </td>
+                    <td className="py-3 pr-4">
+                      <div className="flex flex-wrap gap-2">
+                        <button
+                          type="button"
+                          onClick={() => startEditingSupplier(supplier)}
+                          className="rounded-lg border border-gray-300 px-3 py-2 text-xs font-semibold text-gray-700 hover:bg-gray-50"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => deleteSupplier(supplier)}
+                          className="rounded-lg border border-red-200 px-3 py-2 text-xs font-semibold text-red-700 hover:bg-red-50"
+                        >
+                          Delete
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}

@@ -16,6 +16,16 @@ export default function MaterialPage() {
   const [user, setUser] = useState<CurrentUser | null>(null);
   const [loadingUser, setLoadingUser] = useState(true);
   const [materials, setMaterials] = useState<Material[]>([]);
+  const [editingMaterial, setEditingMaterial] = useState<Material | null>(null);
+  const [editForm, setEditForm] = useState({
+    sku: "",
+    name: "",
+    description: "",
+    unit: "",
+    standard_cost: "",
+    reorder_level: "",
+    is_active: true,
+  });
 
   useEffect(() => {
     async function loadCurrentUser() {
@@ -35,7 +45,9 @@ export default function MaterialPage() {
 
         const data: CurrentUser = await res.json();
         setUser(data);
-        setIsManager(data.role === "procurement_manager");
+        setIsManager(
+          data.role === "admin" || data.role === "procurement_manager"
+        );
       } finally {
         setLoadingUser(false);
       }
@@ -66,6 +78,82 @@ export default function MaterialPage() {
     loadMaterials();
   }, []);
 
+  function startEditingMaterial(material: Material) {
+    setEditingMaterial(material);
+    setEditForm({
+      sku: material.sku,
+      name: material.name,
+      description: material.description,
+      unit: material.unit,
+      standard_cost: String(material.standard_cost),
+      reorder_level: String(material.reorder_level),
+      is_active: material.is_active,
+    });
+  }
+
+  async function updateMaterial(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    if (!editingMaterial) return;
+
+    const token = localStorage.getItem("access_token");
+    if (!token) return;
+
+    const res = await fetch(
+      `http://127.0.0.1:8000/api/procurement/raw-materials/${editingMaterial.id}/`,
+      {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          ...editForm,
+          standard_cost: Number(editForm.standard_cost),
+          reorder_level: Number(editForm.reorder_level),
+        }),
+      }
+    );
+
+    if (!res.ok) {
+      alert("Failed to update material");
+      return;
+    }
+
+    const updatedMaterial: Material = await res.json();
+    setMaterials((current) =>
+      current.map((material) =>
+        material.id === updatedMaterial.id ? updatedMaterial : material
+      )
+    );
+    setEditingMaterial(null);
+  }
+
+  async function deleteMaterial(material: Material) {
+    const confirmed = window.confirm(`Delete material "${material.name}"?`);
+    if (!confirmed) return;
+
+    const token = localStorage.getItem("access_token");
+    if (!token) return;
+
+    const res = await fetch(
+      `http://127.0.0.1:8000/api/procurement/raw-materials/${material.id}/`,
+      {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      }
+    );
+
+    if (!res.ok) {
+      const error = await res.json().catch(() => null);
+      alert(error?.detail ?? "Failed to delete material");
+      return;
+    }
+
+    setMaterials((current) =>
+      current.filter((item) => item.id !== material.id)
+    );
+  }
+
   return (
     <main className="min-h-screen bg-gray-50 px-6 py-10">
       <div className="mx-auto max-w-3xl rounded-lg bg-white p-8 shadow-sm">
@@ -89,11 +177,94 @@ export default function MaterialPage() {
         ) : (
           !loadingUser && (
             <p className="rounded-lg bg-amber-50 px-4 py-3 text-sm text-amber-700">
-              Only procurement managers can create materials.
+              Only admins and procurement managers can create materials.
             </p>
           )
         )}
       </div>
+
+      {editingMaterial && (
+        <section className="mx-auto mt-10 max-w-3xl rounded-lg bg-white p-8 shadow-sm">
+          <div className="mb-6 flex items-center justify-between gap-4">
+            <h2 className="text-xl font-bold text-gray-900">Edit Material</h2>
+            <button
+              type="button"
+              onClick={() => setEditingMaterial(null)}
+              className="rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
+            >
+              Cancel
+            </button>
+          </div>
+          <form onSubmit={updateMaterial} className="space-y-4">
+            <div className="grid gap-4 md:grid-cols-2">
+              {(["sku", "name", "unit", "standard_cost", "reorder_level"] as const).map(
+                (field) => (
+                  <input
+                    key={field}
+                    type={
+                      ["standard_cost", "reorder_level"].includes(field)
+                        ? "number"
+                        : "text"
+                    }
+                    min={
+                      ["standard_cost", "reorder_level"].includes(field)
+                        ? "0"
+                        : undefined
+                    }
+                    step={
+                      field === "standard_cost"
+                        ? "0.01"
+                        : field === "reorder_level"
+                          ? "0.001"
+                          : undefined
+                    }
+                    value={editForm[field]}
+                    onChange={(e) =>
+                      setEditForm((current) => ({
+                        ...current,
+                        [field]: e.target.value,
+                      }))
+                    }
+                    className="rounded-lg border border-gray-300 px-3 py-2"
+                    placeholder={field.replace("_", " ")}
+                    required={field !== "unit" ? true : undefined}
+                  />
+                )
+              )}
+            </div>
+            <textarea
+              value={editForm.description}
+              onChange={(e) =>
+                setEditForm((current) => ({
+                  ...current,
+                  description: e.target.value,
+                }))
+              }
+              className="w-full rounded-lg border border-gray-300 px-3 py-2"
+              placeholder="Description"
+            />
+            <label className="flex items-center gap-2 text-sm text-gray-700">
+              <input
+                type="checkbox"
+                checked={editForm.is_active}
+                onChange={(e) =>
+                  setEditForm((current) => ({
+                    ...current,
+                    is_active: e.target.checked,
+                  }))
+                }
+              />
+              Active material
+            </label>
+            <button
+              type="submit"
+              className="rounded-lg bg-emerald-600 px-5 py-2 text-white hover:bg-emerald-700"
+            >
+              Save Changes
+            </button>
+          </form>
+        </section>
+      )}
 
       <section className="mx-auto mt-10 max-w-3xl rounded-lg bg-white p-8 shadow-sm">
         <h2 className="mb-6 text-xl font-bold text-gray-900">Material List</h2>
@@ -109,6 +280,7 @@ export default function MaterialPage() {
                   <th className="py-3 pr-4 font-medium">Unit</th>
                   <th className="py-3 pr-4 font-medium">Standard Cost</th>
                   <th className="py-3 pr-4 font-medium">Reorder Level</th>
+                  <th className="py-3 pr-4 font-medium">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -122,6 +294,24 @@ export default function MaterialPage() {
                     </td>
                     <td className="py-3 pr-4 text-gray-700">
                       {material.reorder_level}
+                    </td>
+                    <td className="py-3 pr-4">
+                      <div className="flex flex-wrap gap-2">
+                        <button
+                          type="button"
+                          onClick={() => startEditingMaterial(material)}
+                          className="rounded-lg border border-gray-300 px-3 py-2 text-xs font-semibold text-gray-700 hover:bg-gray-50"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => deleteMaterial(material)}
+                          className="rounded-lg border border-red-200 px-3 py-2 text-xs font-semibold text-red-700 hover:bg-red-50"
+                        >
+                          Delete
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}

@@ -1,7 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { authenticatedFetch } from "@/lib/api";
 
 type ProductionOrder = {
   id: number;
@@ -10,11 +12,21 @@ type ProductionOrder = {
   sales_order_number: string | null;
   product_sku: string;
   product_name: string;
+  bill_of_material: number | null;
+  bill_of_material_version: string | null;
   planned_quantity: string;
   produced_quantity: string;
   status: "planned" | "released" | "in_progress" | "completed" | "cancelled";
   due_date: string | null;
   notes: string;
+  material_consumptions: MaterialConsumption[];
+};
+
+type MaterialConsumption = {
+  id: number;
+  raw_material_name: string;
+  quantity: string;
+  consumed_at: string;
 };
 
 type RawMaterialStock = {
@@ -28,11 +40,6 @@ type RawMaterialStock = {
 const productionOrdersUrl =
   "http://127.0.0.1:8000/api/production/production-orders/";
 const rawMaterialsUrl = "http://127.0.0.1:8000/api/inventory/raw-materials/";
-
-function getAuthHeaders() {
-  const token = localStorage.getItem("access_token");
-  return token ? { Authorization: `Bearer ${token}` } : {};
-}
 
 function formatQuantity(value: string | number) {
   return Number(value).toLocaleString(undefined, { maximumFractionDigits: 3 });
@@ -68,6 +75,7 @@ function SourceBadge({ source }: { source: ProductionOrder["source"] }) {
 }
 
 export default function ProductionOrdersPage() {
+  const router = useRouter();
   const [orders, setOrders] = useState<ProductionOrder[]>([]);
   const [rawMaterials, setRawMaterials] = useState<RawMaterialStock[]>([]);
   const [loading, setLoading] = useState(true);
@@ -77,6 +85,10 @@ export default function ProductionOrdersPage() {
   const [materialInputs, setMaterialInputs] = useState<
     Record<number, { rawMaterialSku: string; quantity: string }>
   >({});
+  const [bomQuantities, setBomQuantities] = useState<Record<number, string>>({});
+  const [successMessages, setSuccessMessages] = useState<Record<number, string>>(
+    {}
+  );
 
   const openOrders = useMemo(
     () =>
@@ -86,12 +98,20 @@ export default function ProductionOrdersPage() {
     [orders]
   );
 
-  async function loadOrders() {
-    const headers = getAuthHeaders();
+  const handleAuthExpired = useCallback(() => {
+    alert("Your session expired. Please sign in again.");
+    router.push("/login");
+  }, [router]);
+
+  const loadOrders = useCallback(async () => {
     const [ordersRes, rawMaterialsRes] = await Promise.all([
-      fetch(productionOrdersUrl, { headers }),
-      fetch(rawMaterialsUrl, { headers }),
+      authenticatedFetch(productionOrdersUrl, {}, handleAuthExpired),
+      authenticatedFetch(rawMaterialsUrl, {}, handleAuthExpired),
     ]);
+
+    if (ordersRes.status === 401 || rawMaterialsRes.status === 401) {
+      return;
+    }
 
     if (!ordersRes.ok || !rawMaterialsRes.ok) {
       alert("Failed to load production orders");
@@ -104,7 +124,7 @@ export default function ProductionOrdersPage() {
     ]);
     setOrders(ordersData);
     setRawMaterials(rawMaterialsData);
-  }
+  }, [handleAuthExpired]);
 
   useEffect(() => {
     async function loadPage() {
@@ -116,7 +136,7 @@ export default function ProductionOrdersPage() {
     }
 
     loadPage();
-  }, []);
+  }, [loadOrders]);
 
   function updateOrder(updatedOrder: ProductionOrder) {
     setOrders((current) =>
@@ -125,10 +145,13 @@ export default function ProductionOrdersPage() {
   }
 
   async function runOrderAction(order: ProductionOrder, action: string) {
-    const res = await fetch(`${productionOrdersUrl}${order.id}/${action}/`, {
-      method: "POST",
-      headers: getAuthHeaders(),
-    });
+    const res = await authenticatedFetch(
+      `${productionOrdersUrl}${order.id}/${action}/`,
+      { method: "POST" },
+      handleAuthExpired
+    );
+
+    if (res.status === 401) return;
 
     if (!res.ok) {
       alert(`Failed to ${action} production order`);
@@ -145,14 +168,19 @@ export default function ProductionOrdersPage() {
       return;
     }
 
-    const res = await fetch(`${productionOrdersUrl}${order.id}/complete/`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        ...getAuthHeaders(),
+    const res = await authenticatedFetch(
+      `${productionOrdersUrl}${order.id}/complete/`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ produced_quantity: Number(producedQuantity) }),
       },
-      body: JSON.stringify({ produced_quantity: Number(producedQuantity) }),
-    });
+      handleAuthExpired
+    );
+
+    if (res.status === 401) return;
 
     if (!res.ok) {
       alert("Failed to complete production order");
@@ -170,17 +198,22 @@ export default function ProductionOrdersPage() {
       return;
     }
 
-    const res = await fetch(`${productionOrdersUrl}${order.id}/consume-material/`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        ...getAuthHeaders(),
+    const res = await authenticatedFetch(
+      `${productionOrdersUrl}${order.id}/consume-material/`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          raw_material_name: materialInput.rawMaterialSku,
+          quantity: Number(materialInput.quantity),
+        }),
       },
-      body: JSON.stringify({
-        raw_material_name: materialInput.rawMaterialSku,
-        quantity: Number(materialInput.quantity),
-      }),
-    });
+      handleAuthExpired
+    );
+
+    if (res.status === 401) return;
 
     if (!res.ok) {
       const error = await res.json().catch(() => null);
@@ -188,9 +221,59 @@ export default function ProductionOrdersPage() {
       return;
     }
 
+    const consumption: MaterialConsumption = await res.json();
+
     setMaterialInputs((current) => ({
       ...current,
       [order.id]: { rawMaterialSku: "", quantity: "" },
+    }));
+    setSuccessMessages((current) => ({
+      ...current,
+      [order.id]: `Consumed ${formatQuantity(consumption.quantity)} of ${consumption.raw_material_name}.`,
+    }));
+    await loadOrders();
+  }
+
+  async function consumeBom(order: ProductionOrder) {
+    if (!order.bill_of_material) {
+      alert("Attach a bill of material to this production order first");
+      return;
+    }
+
+    const productionQuantity = bomQuantities[order.id];
+    const body = productionQuantity
+      ? { production_quantity: Number(productionQuantity) }
+      : {};
+
+    const res = await authenticatedFetch(
+      `${productionOrdersUrl}${order.id}/consume-bom/`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(body),
+      },
+      handleAuthExpired
+    );
+
+    if (res.status === 401) return;
+
+    if (!res.ok) {
+      const error = await res.json().catch(() => null);
+      alert(error?.detail ?? "Failed to consume BOM materials");
+      return;
+    }
+
+    const consumptions: MaterialConsumption[] = await res.json();
+    const totalLines = consumptions.length;
+
+    setBomQuantities((current) => ({ ...current, [order.id]: "" }));
+    setSuccessMessages((current) => ({
+      ...current,
+      [order.id]: `BOM consumed successfully: ${totalLines} material line${
+        totalLines === 1 ? "" : "s"
+      } used.`,
     }));
     await loadOrders();
   }
@@ -243,6 +326,11 @@ export default function ProductionOrdersPage() {
                           Sales order: {order.sales_order_number}
                         </p>
                       )}
+                      {order.bill_of_material_version && (
+                        <p className="mt-1 text-sm text-gray-500">
+                          BOM: v{order.bill_of_material_version}
+                        </p>
+                      )}
                     </div>
 
                     <div className="text-sm text-gray-700 md:text-right">
@@ -254,6 +342,28 @@ export default function ProductionOrdersPage() {
 
                   {order.notes && (
                     <p className="mt-3 text-sm text-gray-500">{order.notes}</p>
+                  )}
+
+                  {successMessages[order.id] && (
+                    <p className="mt-3 rounded-lg bg-emerald-50 px-3 py-2 text-sm font-medium text-emerald-700">
+                      {successMessages[order.id]}
+                    </p>
+                  )}
+
+                  {order.material_consumptions.length > 0 && (
+                    <div className="mt-3 rounded-lg bg-gray-50 px-3 py-2">
+                      <p className="text-xs font-semibold uppercase text-gray-500">
+                        Materials consumed
+                      </p>
+                      <ul className="mt-2 space-y-1 text-sm text-gray-700">
+                        {order.material_consumptions.slice(0, 4).map((item) => (
+                          <li key={item.id}>
+                            {item.raw_material_name}:{" "}
+                            {formatQuantity(item.quantity)}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
                   )}
 
                   <div className="mt-4 flex flex-col gap-3 border-t border-gray-100 pt-4 lg:flex-row lg:items-center">
@@ -309,6 +419,41 @@ export default function ProductionOrdersPage() {
                         Receive Output
                       </button>
                     </div>
+                  </div>
+
+                  <div className="mt-4 grid gap-2 border-t border-gray-100 pt-4 sm:grid-cols-[160px_auto_1fr]">
+                    <input
+                      type="number"
+                      min="0.001"
+                      step="0.001"
+                      value={bomQuantities[order.id] ?? ""}
+                      onChange={(e) =>
+                        setBomQuantities((current) => ({
+                          ...current,
+                          [order.id]: e.target.value,
+                        }))
+                      }
+                      disabled={
+                        !order.bill_of_material ||
+                        ["completed", "cancelled"].includes(order.status)
+                      }
+                      placeholder="Build qty"
+                      className="rounded-lg border border-gray-300 px-3 py-2 text-sm"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => consumeBom(order)}
+                      disabled={
+                        !order.bill_of_material ||
+                        ["completed", "cancelled"].includes(order.status)
+                      }
+                      className="rounded-lg border border-emerald-200 px-4 py-2 text-sm font-semibold text-emerald-700 hover:bg-emerald-50 disabled:cursor-not-allowed disabled:opacity-40"
+                    >
+                      Use BOM Materials
+                    </button>
+                    <p className="self-center text-xs text-gray-500">
+                      Leave quantity blank to consume materials for the remaining planned quantity.
+                    </p>
                   </div>
 
                   <div className="mt-4 grid gap-2 border-t border-gray-100 pt-4 sm:grid-cols-[1fr_160px_auto]">

@@ -12,6 +12,15 @@ type FinishedProductStock = {
   available_quantity: string;
 };
 
+type RawMaterialStock = {
+  id: number;
+  sku: string;
+  name: string;
+  unit: string;
+  reorder_level: string;
+  available_quantity: string;
+};
+
 type InventoryCheck = {
   product_id: number;
   sku: string;
@@ -23,11 +32,13 @@ type InventoryCheck = {
   route: "inventory" | "production";
 };
 
+type CheckMode = "product" | "material";
+
 const inventoryApi = "http://127.0.0.1:8000/api/inventory";
 const productionOrdersApi =
   "http://127.0.0.1:8000/api/production/production-orders/";
 
-function getAuthHeaders() {
+function getAuthHeaders(): Record<string, string> {
   const token = localStorage.getItem("access_token");
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
@@ -50,8 +61,11 @@ function RouteBadge({ route }: { route: InventoryCheck["route"] }) {
 }
 
 export default function CheckProductPage() {
+  const [mode, setMode] = useState<CheckMode>("product");
   const [products, setProducts] = useState<FinishedProductStock[]>([]);
+  const [materials, setMaterials] = useState<RawMaterialStock[]>([]);
   const [productId, setProductId] = useState("");
+  const [materialId, setMaterialId] = useState("");
   const [quantity, setQuantity] = useState("");
   const [productCheck, setProductCheck] = useState<InventoryCheck | null>(null);
   const [checking, setChecking] = useState(false);
@@ -65,26 +79,63 @@ export default function CheckProductPage() {
     [productId, products]
   );
 
-  useEffect(() => {
-    async function loadProducts() {
-      const res = await fetch(`${inventoryApi}/finished-products/`, {
-        headers: getAuthHeaders(),
-      });
+  const selectedMaterial = useMemo(
+    () => materials.find((material) => material.id === Number(materialId)),
+    [materialId, materials]
+  );
 
-      if (!res.ok) {
-        alert("Failed to load inventory products");
+  const materialCheck = useMemo(() => {
+    if (!selectedMaterial || !quantity) return null;
+
+    const requiredQuantity = Number(quantity);
+    const availableQuantity = Number(selectedMaterial.available_quantity);
+    const shortageQuantity = Math.max(requiredQuantity - availableQuantity, 0);
+
+    return {
+      material: selectedMaterial,
+      requiredQuantity,
+      availableQuantity,
+      shortageQuantity,
+      isLowStock:
+        availableQuantity <= Number(selectedMaterial.reorder_level),
+    };
+  }, [quantity, selectedMaterial]);
+
+  useEffect(() => {
+    async function loadStockItems() {
+      const [productsRes, materialsRes] = await Promise.all([
+        fetch(`${inventoryApi}/finished-products/`, {
+          headers: getAuthHeaders(),
+        }),
+        fetch(`${inventoryApi}/raw-materials/`, {
+          headers: getAuthHeaders(),
+        }),
+      ]);
+
+      if (!productsRes.ok || !materialsRes.ok) {
+        alert("Failed to load inventory items");
         return;
       }
 
-      const data: FinishedProductStock[] = await res.json();
-      setProducts(data);
+      const [productsData, materialsData] = await Promise.all([
+        productsRes.json() as Promise<FinishedProductStock[]>,
+        materialsRes.json() as Promise<RawMaterialStock[]>,
+      ]);
+      setProducts(productsData);
+      setMaterials(materialsData);
     }
 
-    loadProducts();
+    loadStockItems();
   }, []);
 
-  async function checkProductStock(e: React.FormEvent<HTMLFormElement>) {
+  async function checkStock(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
+
+    if (mode === "material") {
+      setProductCheck(null);
+      return;
+    }
+
     setChecking(true);
     setCreatedOrderNumber(null);
 
@@ -156,39 +207,81 @@ export default function CheckProductPage() {
         </Link>
 
         <form
-          onSubmit={checkProductStock}
+          onSubmit={checkStock}
           className="rounded-lg border border-gray-200 bg-white p-8 shadow-sm"
         >
           <h1 className="text-2xl font-bold text-gray-950">
-            Check Product Stock
+            Check Product or Material Stock
           </h1>
           <p className="mt-2 text-sm text-gray-600">
-            Check whether product demand can be fulfilled from inventory or
-            needs production.
+            Check finished product availability for demand or raw material
+            availability for production.
           </p>
 
           <div className="mt-6 space-y-4">
+            <div className="inline-flex rounded-lg border border-gray-200 bg-gray-50 p-1">
+              {(["product", "material"] as CheckMode[]).map((item) => (
+                <button
+                  key={item}
+                  type="button"
+                  onClick={() => {
+                    setMode(item);
+                    setProductCheck(null);
+                    setCreatedOrderNumber(null);
+                    setQuantity("");
+                  }}
+                  className={`rounded-md px-4 py-2 text-sm font-semibold capitalize transition ${
+                    mode === item
+                      ? "bg-white text-emerald-700 shadow-sm"
+                      : "text-gray-600 hover:text-gray-950"
+                  }`}
+                >
+                  {item}
+                </button>
+              ))}
+            </div>
+
             <div>
               <label className="mb-1 block text-sm font-medium text-gray-700">
-                Product
+                {mode === "product" ? "Product" : "Raw Material"}
               </label>
-              <select
-                value={productId}
-                onChange={(e) => {
-                  setProductId(e.target.value);
-                  setProductCheck(null);
-                  setCreatedOrderNumber(null);
-                }}
-                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
-                required
-              >
-                <option value="">Select product</option>
-                {products.map((product) => (
-                  <option key={product.id} value={product.id}>
-                    {product.sku} - {product.name}
-                  </option>
-                ))}
-              </select>
+              {mode === "product" ? (
+                <select
+                  value={productId}
+                  onChange={(e) => {
+                    setProductId(e.target.value);
+                    setProductCheck(null);
+                    setCreatedOrderNumber(null);
+                  }}
+                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+                  required
+                >
+                  <option value="">Select product</option>
+                  {products.map((product) => (
+                    <option key={product.id} value={product.id}>
+                      {product.sku} - {product.name}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <select
+                  value={materialId}
+                  onChange={(e) => {
+                    setMaterialId(e.target.value);
+                    setProductCheck(null);
+                    setCreatedOrderNumber(null);
+                  }}
+                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+                  required
+                >
+                  <option value="">Select raw material</option>
+                  {materials.map((material) => (
+                    <option key={material.id} value={material.id}>
+                      {material.sku} - {material.name}
+                    </option>
+                  ))}
+                </select>
+              )}
             </div>
 
             <div>
@@ -210,12 +303,26 @@ export default function CheckProductPage() {
               />
             </div>
 
-            {selectedProduct && (
+            {mode === "product" && selectedProduct && (
               <div className="rounded-lg bg-gray-50 px-4 py-3 text-sm text-gray-700">
                 Current stock:{" "}
                 <span className="font-semibold text-gray-900">
                   {formatQuantity(selectedProduct.available_quantity)}{" "}
                   {selectedProduct.unit}
+                </span>
+              </div>
+            )}
+
+            {mode === "material" && selectedMaterial && (
+              <div className="rounded-lg bg-gray-50 px-4 py-3 text-sm text-gray-700">
+                Current stock:{" "}
+                <span className="font-semibold text-gray-900">
+                  {formatQuantity(selectedMaterial.available_quantity)}{" "}
+                  {selectedMaterial.unit}
+                </span>
+                <span className="ml-2 text-gray-500">
+                  Reorder level:{" "}
+                  {formatQuantity(selectedMaterial.reorder_level)}
                 </span>
               </div>
             )}
@@ -267,6 +374,52 @@ export default function CheckProductPage() {
                     </p>
                   )}
                 </div>
+              )}
+            </div>
+          )}
+
+          {mode === "material" && materialCheck && (
+            <div className="mt-6 rounded-lg border border-gray-200 p-4">
+              <div className="flex items-center justify-between gap-4">
+                <div>
+                  <p className="font-semibold text-gray-900">
+                    {materialCheck.material.sku} -{" "}
+                    {materialCheck.material.name}
+                  </p>
+                  <p className="mt-1 text-sm text-gray-500">
+                    Required {formatQuantity(materialCheck.requiredQuantity)},
+                    available {formatQuantity(materialCheck.availableQuantity)}{" "}
+                    {materialCheck.material.unit}
+                  </p>
+                </div>
+                <span
+                  className={`rounded-full px-3 py-1 text-xs font-semibold ${
+                    materialCheck.shortageQuantity > 0
+                      ? "bg-red-50 text-red-700"
+                      : materialCheck.isLowStock
+                        ? "bg-amber-50 text-amber-700"
+                        : "bg-emerald-50 text-emerald-700"
+                  }`}
+                >
+                  {materialCheck.shortageQuantity > 0
+                    ? "Shortage"
+                    : materialCheck.isLowStock
+                      ? "Low Stock"
+                      : "Available"}
+                </span>
+              </div>
+              <p className="mt-4 text-sm text-gray-700">
+                Shortage:{" "}
+                <span className="font-semibold text-gray-900">
+                  {formatQuantity(materialCheck.shortageQuantity)}{" "}
+                  {materialCheck.material.unit}
+                </span>
+              </p>
+              {materialCheck.shortageQuantity > 0 && (
+                <p className="mt-3 rounded-lg bg-amber-50 px-4 py-3 text-sm text-amber-800">
+                  This material needs procurement before production can consume
+                  the requested quantity.
+                </p>
               )}
             </div>
           )}

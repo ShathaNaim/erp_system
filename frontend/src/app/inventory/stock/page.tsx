@@ -23,7 +23,7 @@ type RawMaterialStock = {
 
 const inventoryApi = "http://127.0.0.1:8000/api/inventory";
 
-function getAuthHeaders() {
+function getAuthHeaders(): Record<string, string> {
   const token = localStorage.getItem("access_token");
   return token ? { Authorization: `Bearer ${token}` } : {};
 }

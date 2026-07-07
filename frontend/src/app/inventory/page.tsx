@@ -25,11 +25,11 @@ const inventorySections = [
   },
   {
     href: "/inventory/check-product",
-    title: "Check Product",
+    title: "Check Product or Material",
     label: "Availability",
     statKey: "rawMaterials",
     description:
-      "Check product availability and create production orders for shortages.",
+      "Check product or material availability and review shortage actions.",
   },
   {
     href: "/inventory/sales-orders",

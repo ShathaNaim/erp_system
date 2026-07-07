@@ -7,6 +7,8 @@ import PurchaseOrderForm, {
 
 export default function PurchaseOrderPage() {
   const [purchaseOrders, setPurchaseOrders] = useState<SavedPurchaseOrder[]>([]);
+  const [editingPurchaseOrder, setEditingPurchaseOrder] =
+    useState<SavedPurchaseOrder | null>(null);
   const [receivingOrderId, setReceivingOrderId] = useState<number | null>(null);
 
   useEffect(() => {
@@ -72,17 +74,63 @@ export default function PurchaseOrderPage() {
     }
   }
 
+  async function deletePurchaseOrder(purchaseOrder: SavedPurchaseOrder) {
+    const confirmed = window.confirm(
+      `Delete purchase order "${purchaseOrder.order_number}"?`
+    );
+    if (!confirmed) return;
+
+    const token = localStorage.getItem("access_token");
+    if (!token) return;
+
+    const res = await fetch(
+      `http://127.0.0.1:8000/api/procurement/purchase-orders/${purchaseOrder.id}/`,
+      {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      }
+    );
+
+    if (!res.ok) {
+      const error = await res.json().catch(() => null);
+      alert(error?.detail ?? "Failed to delete purchase order");
+      return;
+    }
+
+    setPurchaseOrders((current) =>
+      current.filter((order) => order.id !== purchaseOrder.id)
+    );
+    if (editingPurchaseOrder?.id === purchaseOrder.id) {
+      setEditingPurchaseOrder(null);
+    }
+  }
+
   return (
     <main className="min-h-screen bg-gray-50 px-6 py-10">
       <div className="mx-auto max-w-3xl rounded-lg bg-white p-8 shadow-sm">
         <h1 className="mb-6 text-2xl font-bold text-gray-900">
-          Add Purchase Order
+          {editingPurchaseOrder ? "Edit Purchase Order" : "Add Purchase Order"}
         </h1>
 
         <PurchaseOrderForm
+          key={
+            editingPurchaseOrder
+              ? `edit-${editingPurchaseOrder.id}`
+              : "create"
+          }
+          initialPurchaseOrder={editingPurchaseOrder}
           onCreated={(purchaseOrder) =>
             setPurchaseOrders((current) => [...current, purchaseOrder])
           }
+          onUpdated={(updatedOrder) => {
+            setPurchaseOrders((current) =>
+              current.map((order) =>
+                order.id === updatedOrder.id ? updatedOrder : order
+              )
+            );
+            setEditingPurchaseOrder(null);
+          }}
+          onCancelEdit={() => setEditingPurchaseOrder(null)}
         />
       </div>
 
@@ -127,21 +175,39 @@ export default function PurchaseOrderPage() {
                       {purchaseOrder.lines.length}
                     </td>
                     <td className="py-3 pr-4 text-gray-700">
-                      <button
-                        type="button"
-                        onClick={() => receivePurchaseOrder(purchaseOrder)}
-                        disabled={
-                          receivingOrderId === purchaseOrder.id ||
-                          ["received", "cancelled"].includes(
-                            purchaseOrder.status
-                          )
-                        }
-                        className="rounded-lg bg-emerald-600 px-3 py-2 text-xs font-semibold text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"
-                      >
-                        {receivingOrderId === purchaseOrder.id
-                          ? "Receiving..."
-                          : "Mark Received"}
-                      </button>
+                      <div className="flex flex-wrap gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setEditingPurchaseOrder(purchaseOrder)}
+                          disabled={purchaseOrder.status !== "draft"}
+                          className="rounded-lg border border-gray-300 px-3 py-2 text-xs font-semibold text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => deletePurchaseOrder(purchaseOrder)}
+                          disabled={purchaseOrder.status !== "draft"}
+                          className="rounded-lg border border-red-200 px-3 py-2 text-xs font-semibold text-red-700 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                          Delete
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => receivePurchaseOrder(purchaseOrder)}
+                          disabled={
+                            receivingOrderId === purchaseOrder.id ||
+                            ["received", "cancelled"].includes(
+                              purchaseOrder.status
+                            )
+                          }
+                          className="rounded-lg bg-emerald-600 px-3 py-2 text-xs font-semibold text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                          {receivingOrderId === purchaseOrder.id
+                            ? "Receiving..."
+                            : "Mark Received"}
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}

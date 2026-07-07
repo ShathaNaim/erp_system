@@ -1,3 +1,4 @@
+from django.db.models import ProtectedError
 from .serializer import RawMaterialSerializer,SupplierSerializer,PurchaseOrderSerializer
 from .models import RawMaterial, Supplier,PurchaseOrder
 from inventory.services import receive_purchase_order
@@ -19,6 +20,15 @@ class RawMaterialViewSet(viewsets.ModelViewSet):
             permission_classes = [IsAuthenticated]
         return [permission() for permission in permission_classes]
 
+    def destroy(self, request, *args, **kwargs):
+        try:
+            return super().destroy(request, *args, **kwargs)
+        except ProtectedError:
+            return Response(
+                {"detail": "This material is used by orders or inventory and cannot be deleted."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
 class SupplierViewSet(viewsets.ModelViewSet):
     queryset = Supplier.objects.all()
     serializer_class = SupplierSerializer
@@ -30,10 +40,49 @@ class SupplierViewSet(viewsets.ModelViewSet):
 
         return [permission() for permission in permission_classes]      
 
+    def destroy(self, request, *args, **kwargs):
+        try:
+            return super().destroy(request, *args, **kwargs)
+        except ProtectedError:
+            return Response(
+                {"detail": "This supplier has purchase records and cannot be deleted."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
 class PurchaseOrderViewSet(viewsets.ModelViewSet):
     queryset = PurchaseOrder.objects.all()
     serializer_class = PurchaseOrderSerializer
     permission_classes = [IsAuthenticated,IsProcurementEmployee]
+
+    def update(self, request, *args, **kwargs):
+        purchase_order = self.get_object()
+        if purchase_order.status != PurchaseOrder.Status.DRAFT:
+            return Response(
+                {"detail": "Only draft purchase orders can be edited."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        return super().update(request, *args, **kwargs)
+
+    def partial_update(self, request, *args, **kwargs):
+        purchase_order = self.get_object()
+        if purchase_order.status != PurchaseOrder.Status.DRAFT:
+            return Response(
+                {"detail": "Only draft purchase orders can be edited."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        return super().partial_update(request, *args, **kwargs)
+
+    def destroy(self, request, *args, **kwargs):
+        purchase_order = self.get_object()
+        if purchase_order.status != PurchaseOrder.Status.DRAFT:
+            return Response(
+                {"detail": "Only draft purchase orders can be deleted."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        return super().destroy(request, *args, **kwargs)
 
     @action(detail=True, methods=["post"])
     def receive(self, request, pk=None):

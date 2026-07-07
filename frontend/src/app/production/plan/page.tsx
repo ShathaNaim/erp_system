@@ -16,20 +16,32 @@ type ProductionOrder = {
   due_date: string | null;
 };
 
+type BillOfMaterial = {
+  id: number;
+  product: number;
+  product_sku: string;
+  product_name: string;
+  version: string;
+  is_active: boolean;
+};
+
 const productsUrl = "http://127.0.0.1:8000/api/production/finished-products/";
+const bomsUrl = "http://127.0.0.1:8000/api/production/bill-of-materials/";
 const productionOrdersUrl =
   "http://127.0.0.1:8000/api/production/production-orders/";
 
-function getAuthHeaders() {
+function getAuthHeaders(): Record<string, string> {
   const token = localStorage.getItem("access_token");
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
 export default function PlanProductionPage() {
   const [products, setProducts] = useState<Product[]>([]);
+  const [boms, setBoms] = useState<BillOfMaterial[]>([]);
   const [plannedOrders, setPlannedOrders] = useState<ProductionOrder[]>([]);
   const [orderNumber, setOrderNumber] = useState("");
   const [productId, setProductId] = useState("");
+  const [bomId, setBomId] = useState("");
   const [plannedQuantity, setPlannedQuantity] = useState("");
   const [dueDate, setDueDate] = useState("");
   const [notes, setNotes] = useState("");
@@ -37,22 +49,25 @@ export default function PlanProductionPage() {
   useEffect(() => {
     async function loadPageData() {
       const headers = getAuthHeaders();
-      const [productsRes, ordersRes] = await Promise.all([
+      const [productsRes, bomsRes, ordersRes] = await Promise.all([
         fetch(productsUrl, { headers }),
+        fetch(bomsUrl, { headers }),
         fetch(productionOrdersUrl, { headers }),
       ]);
 
-      if (!productsRes.ok || !ordersRes.ok) {
+      if (!productsRes.ok || !bomsRes.ok || !ordersRes.ok) {
         alert("Failed to load production planning data");
         return;
       }
 
-      const [productsData, ordersData] = await Promise.all([
+      const [productsData, bomsData, ordersData] = await Promise.all([
         productsRes.json() as Promise<Product[]>,
+        bomsRes.json() as Promise<BillOfMaterial[]>,
         ordersRes.json() as Promise<ProductionOrder[]>,
       ]);
 
       setProducts(productsData);
+      setBoms(bomsData);
       setPlannedOrders(
         ordersData.filter((order) => order.sales_order_line === null)
       );
@@ -75,6 +90,7 @@ export default function PlanProductionPage() {
       body: JSON.stringify({
         order_number: orderNumber,
         product: Number(productId),
+        bill_of_material: bomId ? Number(bomId) : null,
         planned_quantity: Number(plannedQuantity),
         due_date: dueDate || null,
         notes,
@@ -90,10 +106,15 @@ export default function PlanProductionPage() {
     setPlannedOrders((current) => [savedOrder, ...current]);
     setOrderNumber("");
     setProductId("");
+    setBomId("");
     setPlannedQuantity("");
     setDueDate("");
     setNotes("");
   }
+
+  const productBoms = boms.filter(
+    (bom) => bom.is_active && String(bom.product) === productId
+  );
 
   return (
     <main className="min-h-screen bg-gray-50 px-6 py-10">
@@ -134,7 +155,10 @@ export default function PlanProductionPage() {
                 </label>
                 <select
                   value={productId}
-                  onChange={(e) => setProductId(e.target.value)}
+                  onChange={(e) => {
+                    setProductId(e.target.value);
+                    setBomId("");
+                  }}
                   className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
                   required
                 >
@@ -145,7 +169,25 @@ export default function PlanProductionPage() {
                       <option key={product.id} value={product.id}>
                         {product.sku} - {product.name}
                       </option>
-                    ))}
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="mb-1 block text-sm font-medium text-gray-700">
+                  Bill of Material
+                </label>
+                <select
+                  value={bomId}
+                  onChange={(e) => setBomId(e.target.value)}
+                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+                >
+                  <option value="">No BOM selected</option>
+                  {productBoms.map((bom) => (
+                    <option key={bom.id} value={bom.id}>
+                      {bom.product_sku} v{bom.version}
+                    </option>
+                  ))}
                 </select>
               </div>
 

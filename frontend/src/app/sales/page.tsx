@@ -1,22 +1,78 @@
+"use client";
+
 import Link from "next/link";
+import { useEffect, useState } from "react";
+
+type SalesStats = {
+  customers: number;
+  orders: number;
+};
+
+const initialStats: SalesStats = {
+  customers: 0,
+  orders: 0,
+};
 
 const salesSections = [
   {
     href: "/sales/customer",
     title: "Customers",
     label: "Master data",
+    statKey: "customers",
     description: "Create customers and keep customer contact details ready for orders.",
   },
   {
     href: "/sales/order",
     title: "Sales Orders",
     label: "Demand",
+    statKey: "orders",
     description:
       "Create customer orders, confirm demand, and route shortages to production.",
   },
-];
+] as const;
 
 export default function SalesPage() {
+  const [stats, setStats] = useState<SalesStats>(initialStats);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function loadStats() {
+      const token = localStorage.getItem("access_token");
+      if (!token) {
+        setLoading(false);
+        return;
+      }
+
+      try {
+        const headers = { Authorization: `Bearer ${token}` };
+        const [customersRes, ordersRes] = await Promise.all([
+          fetch("http://127.0.0.1:8000/api/sales/customers/", { headers }),
+          fetch("http://127.0.0.1:8000/api/sales/sales-orders/", { headers }),
+        ]);
+
+        if (!customersRes.ok || !ordersRes.ok) {
+          throw new Error("Failed to load sales stats");
+        }
+
+        const [customers, orders] = await Promise.all([
+          customersRes.json(),
+          ordersRes.json(),
+        ]);
+
+        setStats({
+          customers: Array.isArray(customers) ? customers.length : 0,
+          orders: Array.isArray(orders) ? orders.length : 0,
+        });
+      } catch {
+        setStats(initialStats);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    loadStats();
+  }, []);
+
   return (
     <main className="min-h-screen bg-gray-50 px-6 py-10">
       <div className="mx-auto max-w-6xl space-y-8">
@@ -55,6 +111,9 @@ export default function SalesPage() {
               </div>
               <p className="mt-4 text-sm leading-6 text-gray-600">
                 {section.description}
+              </p>
+              <p className="mt-5 text-3xl font-bold text-gray-950">
+                {loading ? "..." : stats[section.statKey]}
               </p>
             </Link>
           ))}

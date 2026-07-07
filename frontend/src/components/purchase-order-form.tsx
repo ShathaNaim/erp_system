@@ -37,7 +37,10 @@ export type SavedPurchaseOrder = {
 };
 
 type PurchaseOrderFormProps = {
+  initialPurchaseOrder?: SavedPurchaseOrder | null;
   onCreated?: (purchaseOrder: SavedPurchaseOrder) => void;
+  onUpdated?: (purchaseOrder: SavedPurchaseOrder) => void;
+  onCancelEdit?: () => void;
 };
 
 const emptyLine: PurchaseOrderLine = {
@@ -46,16 +49,44 @@ const emptyLine: PurchaseOrderLine = {
   unitPrice: "",
 };
 
-export default function PurchaseOrderForm({ onCreated }: PurchaseOrderFormProps) {
+function purchaseOrderLinesToInputs(
+  purchaseOrder: SavedPurchaseOrder
+): PurchaseOrderLine[] {
+  return purchaseOrder.lines.map((line) => ({
+    rawMaterialId: String(line.raw_material),
+    quantity: String(line.quantity),
+    unitPrice: String(line.unit_price),
+  }));
+}
+
+export default function PurchaseOrderForm({
+  initialPurchaseOrder,
+  onCreated,
+  onUpdated,
+  onCancelEdit,
+}: PurchaseOrderFormProps) {
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [rawMaterials, setRawMaterials] = useState<RawMaterial[]>([]);
-  const [orderNumber, setOrderNumber] = useState("");
-  const [supplierId, setSupplierId] = useState("");
-  const [orderDate, setOrderDate] = useState("");
-  const [expectedDate, setExpectedDate] = useState("");
-  const [status, setStatus] = useState("draft");
-  const [notes, setNotes] = useState("");
-  const [lines, setLines] = useState<PurchaseOrderLine[]>([{ ...emptyLine }]);
+  const [orderNumber, setOrderNumber] = useState(
+    initialPurchaseOrder?.order_number ?? ""
+  );
+  const [supplierId, setSupplierId] = useState(
+    initialPurchaseOrder ? String(initialPurchaseOrder.supplier) : ""
+  );
+  const [orderDate, setOrderDate] = useState(
+    initialPurchaseOrder?.order_date ?? ""
+  );
+  const [expectedDate, setExpectedDate] = useState(
+    initialPurchaseOrder?.expected_date ?? ""
+  );
+  const [status, setStatus] = useState(initialPurchaseOrder?.status ?? "draft");
+  const [notes, setNotes] = useState(initialPurchaseOrder?.notes ?? "");
+  const [lines, setLines] = useState<PurchaseOrderLine[]>(
+    initialPurchaseOrder
+      ? purchaseOrderLinesToInputs(initialPurchaseOrder)
+      : [{ ...emptyLine }]
+  );
+  const isEditing = Boolean(initialPurchaseOrder);
 
   useEffect(() => {
     async function loadSuppliers() {
@@ -130,8 +161,12 @@ export default function PurchaseOrderForm({ onCreated }: PurchaseOrderFormProps)
 
     const token = localStorage.getItem("access_token");
 
-    const res = await fetch("http://127.0.0.1:8000/api/procurement/purchase-orders/", {
-      method: "POST",
+    const url = initialPurchaseOrder
+      ? `http://127.0.0.1:8000/api/procurement/purchase-orders/${initialPurchaseOrder.id}/`
+      : "http://127.0.0.1:8000/api/procurement/purchase-orders/";
+
+    const res = await fetch(url, {
+      method: initialPurchaseOrder ? "PUT" : "POST",
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${token}`,
@@ -152,14 +187,23 @@ export default function PurchaseOrderForm({ onCreated }: PurchaseOrderFormProps)
     });
 
     if (!res.ok) {
-      alert("Failed to save purchase order");
+      const error = await res.json().catch(() => null);
+      alert(error?.detail ?? "Failed to save purchase order");
       return;
     }
 
     const savedPurchaseOrder: SavedPurchaseOrder = await res.json();
-    onCreated?.(savedPurchaseOrder);
+    if (initialPurchaseOrder) {
+      onUpdated?.(savedPurchaseOrder);
+    } else {
+      onCreated?.(savedPurchaseOrder);
+    }
 
-    alert("Purchase order saved successfully");
+    alert(
+      initialPurchaseOrder
+        ? "Purchase order updated successfully"
+        : "Purchase order saved successfully"
+    );
 
     setOrderNumber("");
     setSupplierId("");
@@ -343,8 +387,17 @@ export default function PurchaseOrderForm({ onCreated }: PurchaseOrderFormProps)
         type="submit"
         className="rounded-lg bg-emerald-600 px-5 py-2 text-white hover:bg-emerald-700"
       >
-        Save Purchase Order
+        {isEditing ? "Update Purchase Order" : "Save Purchase Order"}
       </button>
+      {isEditing && (
+        <button
+          type="button"
+          onClick={onCancelEdit}
+          className="ml-2 rounded-lg border border-gray-300 px-5 py-2 text-gray-700 hover:bg-gray-50"
+        >
+          Cancel Edit
+        </button>
+      )}
     </form>
   );
 }

@@ -52,7 +52,10 @@ type OrderLineInput = {
 type AddOrderFormProps = {
   customers: Customer[];
   products: FinishedProduct[];
+  initialOrder?: SalesOrder | null;
   onCreated?: (order: SalesOrder) => void;
+  onUpdated?: (order: SalesOrder) => void;
+  onCancelEdit?: () => void;
 };
 
 const emptyLine = (): OrderLineInput => ({
@@ -67,18 +70,42 @@ const emptyLine = (): OrderLineInput => ({
   notes: "",
 });
 
+function orderLinesToInputs(order: SalesOrder): OrderLineInput[] {
+  return order.lines.map((line) => ({
+    mode: "existing",
+    productId: String(line.product),
+    customSku: "",
+    customName: "",
+    customDescription: "",
+    customUnit: "piece",
+    quantity: line.quantity,
+    unitPrice: line.unit_price,
+    notes: line.notes,
+  }));
+}
+
 export default function AddOrderForm({
   customers,
   products,
+  initialOrder,
   onCreated,
+  onUpdated,
+  onCancelEdit,
 }: AddOrderFormProps) {
-  const [orderNumber, setOrderNumber] = useState("");
-  const [customerId, setCustomerId] = useState("");
-  const [orderDate, setOrderDate] = useState("");
-  const [dueDate, setDueDate] = useState("");
-  const [status, setStatus] = useState("draft");
-  const [notes, setNotes] = useState("");
-  const [lines, setLines] = useState<OrderLineInput[]>([emptyLine()]);
+  const [orderNumber, setOrderNumber] = useState(
+    initialOrder?.order_number ?? ""
+  );
+  const [customerId, setCustomerId] = useState(
+    initialOrder ? String(initialOrder.customer) : ""
+  );
+  const [orderDate, setOrderDate] = useState(initialOrder?.order_date ?? "");
+  const [dueDate, setDueDate] = useState(initialOrder?.due_date ?? "");
+  const [status, setStatus] = useState(initialOrder?.status ?? "draft");
+  const [notes, setNotes] = useState(initialOrder?.notes ?? "");
+  const [lines, setLines] = useState<OrderLineInput[]>(
+    initialOrder ? orderLinesToInputs(initialOrder) : [emptyLine()]
+  );
+  const isEditing = Boolean(initialOrder);
 
   function updateLine(
     index: number,
@@ -160,8 +187,12 @@ export default function AddOrderForm({
       notes: line.notes,
     }));
 
-    const res = await fetch("http://127.0.0.1:8000/api/sales/sales-orders/", {
-      method: "POST",
+    const url = initialOrder
+      ? `http://127.0.0.1:8000/api/sales/sales-orders/${initialOrder.id}/`
+      : "http://127.0.0.1:8000/api/sales/sales-orders/";
+
+    const res = await fetch(url, {
+      method: initialOrder ? "PUT" : "POST",
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${token}`,
@@ -180,12 +211,16 @@ export default function AddOrderForm({
     if (!res.ok) {
       const error = await res.json().catch(() => null);
       console.error("Sales order error:", error);
-      alert("Failed to save sales order. Check the order and item data.");
+      alert(error?.detail ?? "Failed to save sales order. Check the order and item data.");
       return;
     }
 
     const savedOrder: SalesOrder = await res.json();
-    onCreated?.(savedOrder);
+    if (initialOrder) {
+      onUpdated?.(savedOrder);
+    } else {
+      onCreated?.(savedOrder);
+    }
 
     setOrderNumber("");
     setCustomerId("");
@@ -194,7 +229,11 @@ export default function AddOrderForm({
     setStatus("draft");
     setNotes("");
     setLines([emptyLine()]);
-    alert("Sales order and its items were saved successfully");
+    alert(
+      initialOrder
+        ? "Sales order was updated successfully"
+        : "Sales order and its items were saved successfully"
+    );
   }
 
   return (
@@ -478,8 +517,17 @@ export default function AddOrderForm({
         type="submit"
         className="rounded-lg bg-emerald-600 px-5 py-2 text-white hover:bg-emerald-700"
       >
-        Save Sales Order
+        {isEditing ? "Update Sales Order" : "Save Sales Order"}
       </button>
+      {isEditing && (
+        <button
+          type="button"
+          onClick={onCancelEdit}
+          className="ml-2 rounded-lg border border-gray-300 px-5 py-2 text-gray-700 hover:bg-gray-50"
+        >
+          Cancel Edit
+        </button>
+      )}
     </form>
   );
 }

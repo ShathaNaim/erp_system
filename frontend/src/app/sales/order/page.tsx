@@ -14,6 +14,7 @@ export default function OrderPage() {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [products, setProducts] = useState<FinishedProduct[]>([]);
   const [orders, setOrders] = useState<SalesOrder[]>([]);
+  const [editingOrder, setEditingOrder] = useState<SalesOrder | null>(null);
   const [confirmingOrderId, setConfirmingOrderId] = useState<number | null>(
     null
   );
@@ -78,6 +79,33 @@ export default function OrderPage() {
     }
   }
 
+  async function deleteSalesOrder(order: SalesOrder) {
+    const confirmed = window.confirm(`Delete sales order "${order.order_number}"?`);
+    if (!confirmed) return;
+
+    const token = localStorage.getItem("access_token");
+    if (!token) {
+      alert("You must be logged in to delete sales orders");
+      return;
+    }
+
+    const res = await fetch(`${salesApi}/sales-orders/${order.id}/`, {
+      method: "DELETE",
+      headers: { Authorization: `Bearer ${token}` },
+    });
+
+    if (!res.ok) {
+      const error = await res.json().catch(() => null);
+      alert(error?.detail ?? "Failed to delete sales order");
+      return;
+    }
+
+    setOrders((current) => current.filter((item) => item.id !== order.id));
+    if (editingOrder?.id === order.id) {
+      setEditingOrder(null);
+    }
+  }
+
   return (
     <main className="min-h-screen bg-gray-50 px-6 py-10">
       <div className="mx-auto max-w-5xl">
@@ -90,17 +118,30 @@ export default function OrderPage() {
 
         <section className="rounded-lg bg-white p-8 shadow-sm">
           <h1 className="mb-2 text-2xl font-bold text-gray-900">
-            Add Sales Order
+            {editingOrder ? "Edit Sales Order" : "Add Sales Order"}
           </h1>
           <p className="mb-6 text-sm text-gray-600">
-            Add the customer, order details, and all products in one form.
+            {editingOrder
+              ? "Only draft sales orders can be edited."
+              : "Add the customer, order details, and all products in one form."}
           </p>
           <AddOrderForm
+            key={editingOrder ? `edit-${editingOrder.id}` : "create"}
             customers={customers}
             products={products}
+            initialOrder={editingOrder}
             onCreated={(order) =>
               setOrders((current) => [...current, order])
             }
+            onUpdated={(updatedOrder) => {
+              setOrders((current) =>
+                current.map((order) =>
+                  order.id === updatedOrder.id ? updatedOrder : order
+                )
+              );
+              setEditingOrder(null);
+            }}
+            onCancelEdit={() => setEditingOrder(null)}
           />
         </section>
 
@@ -144,21 +185,39 @@ export default function OrderPage() {
                         {order.lines.length}
                       </td>
                       <td className="py-3 pr-4 text-gray-700">
-                        <button
-                          type="button"
-                          onClick={() => confirmSalesOrder(order)}
-                          disabled={
-                            confirmingOrderId === order.id ||
-                            ["in_production", "ready", "shipped", "cancelled"].includes(
-                              order.status
-                            )
-                          }
-                          className="rounded-lg bg-gray-900 px-3 py-2 text-xs font-semibold text-white hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-50"
-                        >
-                          {confirmingOrderId === order.id
-                            ? "Confirming..."
-                            : "Confirm"}
-                        </button>
+                        <div className="flex flex-wrap gap-2">
+                          <button
+                            type="button"
+                            onClick={() => setEditingOrder(order)}
+                            disabled={order.status !== "draft"}
+                            className="rounded-lg border border-gray-300 px-3 py-2 text-xs font-semibold text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+                          >
+                            Edit
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => deleteSalesOrder(order)}
+                            disabled={order.status !== "draft"}
+                            className="rounded-lg border border-red-200 px-3 py-2 text-xs font-semibold text-red-700 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
+                          >
+                            Delete
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => confirmSalesOrder(order)}
+                            disabled={
+                              confirmingOrderId === order.id ||
+                              ["in_production", "ready", "shipped", "cancelled"].includes(
+                                order.status
+                              )
+                            }
+                            className="rounded-lg bg-gray-900 px-3 py-2 text-xs font-semibold text-white hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-50"
+                          >
+                            {confirmingOrderId === order.id
+                              ? "Confirming..."
+                              : "Confirm"}
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))}

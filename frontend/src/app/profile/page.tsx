@@ -57,60 +57,79 @@ export default function ProfilePage() {
   }, []);
 
   return (
-    <main className="min-h-screen bg-gray-50 px-6 py-10">
-      <div className="mx-auto max-w-5xl">
-        <div className="mb-8 flex flex-col justify-between gap-4 md:flex-row md:items-end">
+    <main className="min-h-[calc(100vh-73px)] bg-gray-50">
+      <div className="mx-auto max-w-5xl px-4 py-12 sm:px-6 lg:px-8">
+        <div className="mb-8 flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Profile</h1>
-            <p className="mt-2 text-gray-600">
+            <p className="text-sm font-semibold text-emerald-700">Profile</p>
+            <h1 className="mt-2 text-3xl font-bold text-gray-950">
+              Account Details
+            </h1>
+            <p className="mt-2 text-sm text-gray-600">
               Your account and employee assignment details.
             </p>
           </div>
           <Link
             href="/"
-            className="inline-flex w-fit rounded-lg bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-800"
+            className="inline-flex w-fit rounded-lg bg-gray-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-gray-800"
           >
             Dashboard
           </Link>
         </div>
 
         {loading ? (
-          <p className="rounded-lg bg-white p-6 text-sm text-gray-500 shadow-sm">
+          <p className="rounded-lg border border-gray-200 bg-white p-6 text-sm text-gray-500 shadow-sm">
             Loading profile...
           </p>
         ) : error ? (
-          <p className="rounded-lg bg-red-50 p-6 text-sm text-red-700">
+          <p className="rounded-lg border border-red-100 bg-red-50 p-6 text-sm text-red-700">
             {error}
           </p>
         ) : user ? (
-          <div className="grid gap-6 md:grid-cols-1 lg:grid-cols-2">
-            <section className="rounded-lg bg-white p-6 shadow-sm">
-              <p className="text-sm font-medium text-gray-500">Name</p>
-              <h2 className="mt-3 text-xl font-semibold text-gray-900">
-                {user.username}
-              </h2>
+          <div className="space-y-6">
+            <section className="flex items-center gap-4 rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
+              <div className="flex size-14 shrink-0 items-center justify-center rounded-full bg-emerald-600 text-xl font-bold text-white">
+                {user.username.charAt(0).toUpperCase()}
+              </div>
+              <div className="min-w-0">
+                <h2 className="truncate text-2xl font-bold text-gray-950">
+                  {user.username}
+                </h2>
+                <p className="mt-1 text-sm text-gray-500">
+                  {formatValue(user.role)}
+                </p>
+              </div>
             </section>
 
-            <section className="rounded-lg bg-white p-6 shadow-sm">
-              <p className="text-sm font-medium text-gray-500">Email</p>
-              <h2 className="mt-3 break-words text-xl font-semibold text-gray-900">
-                {user.email || "Not provided"}
-              </h2>
-            </section>
+            <div className="grid gap-5 sm:grid-cols-2">
+              <section className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm transition hover:shadow-md">
+                <p className="text-sm font-medium text-gray-500">Name</p>
+                <h3 className="mt-3 text-xl font-semibold text-gray-950">
+                  {user.username}
+                </h3>
+              </section>
 
-            <section className="rounded-lg bg-white p-6 shadow-sm">
-              <p className="text-sm font-medium text-gray-500">Department</p>
-              <h2 className="mt-3 text-xl font-semibold text-gray-900">
-                {formatValue(user.department)}
-              </h2>
-            </section>
+              <section className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm transition hover:shadow-md">
+                <p className="text-sm font-medium text-gray-500">Email</p>
+                <h3 className="mt-3 break-words text-xl font-semibold text-gray-950">
+                  {user.email || "Not provided"}
+                </h3>
+              </section>
 
-            <section className="rounded-lg bg-white p-6 shadow-sm">
-              <p className="text-sm font-medium text-gray-500">Role</p>
-              <h2 className="mt-3 text-xl font-semibold text-gray-900">
-                {formatValue(user.role)}
-              </h2>
-            </section>
+              <section className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm transition hover:shadow-md">
+                <p className="text-sm font-medium text-gray-500">Department</p>
+                <h3 className="mt-3 text-xl font-semibold text-gray-950">
+                  {formatValue(user.department)}
+                </h3>
+              </section>
+
+              <section className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm transition hover:shadow-md">
+                <p className="text-sm font-medium text-gray-500">Role</p>
+                <h3 className="mt-3 text-xl font-semibold text-gray-950">
+                  {formatValue(user.role)}
+                </h3>
+              </section>
+            </div>
           </div>
         ) : null}
       </div>

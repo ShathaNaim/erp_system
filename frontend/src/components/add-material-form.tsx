@@ -10,6 +10,7 @@ export type Material = {
   unit: string;
   standard_cost: number;
   reorder_level: number;
+  is_active: boolean;
 };
 
 type AddMaterialFormProps = {
@@ -25,6 +26,7 @@ export default function AddMaterialForm({
   const [unit, setUnit] = useState("");
   const [standardCost, setStandardCost] = useState("");
   const [reorderLevel, setReorderLevel] = useState("");
+  const [isActive, setIsActive] = useState(true);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -51,6 +53,7 @@ export default function AddMaterialForm({
           unit,
           standard_cost: Number(standardCost),
           reorder_level: Number(reorderLevel),
+          is_active: isActive,
         }),
       }
     );
@@ -74,6 +77,7 @@ export default function AddMaterialForm({
     setUnit("");
     setStandardCost("");
     setReorderLevel("");
+    setIsActive(true);
 
     alert("Material saved successfully");
   }
@@ -159,6 +163,15 @@ export default function AddMaterialForm({
           required
         />
       </div>
+
+      <label className="flex items-center gap-2 text-sm text-gray-700">
+        <input
+          type="checkbox"
+          checked={isActive}
+          onChange={(e) => setIsActive(e.target.checked)}
+        />
+        Active material
+      </label>
 
       <button
         type="submit"

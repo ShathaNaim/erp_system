@@ -42,8 +42,10 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="min-h-screen bg-gray-50 px-6 py-10">
-      <div className="mx-auto min-h-[calc(100vh-8rem)] max-w-5xl items-center gap-8">
+
+  <main className="flex min-h-[calc(100vh-73px)] items-center justify-center bg-gray-50 px-4 py-8 sm:px-6">
+       
+          <div className="w-full max-w-sm border border-gray-200 bg-white p-6 shadow-md">
    
 
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -80,6 +82,10 @@ export default function LoginPage() {
             >
               {loading ? "Signing in..." : "Sign In"}
             </button>
+
+            {error && (
+              <p className="text-sm font-medium text-red-600">{error}</p>
+            )}
           </form>
        
       </div>

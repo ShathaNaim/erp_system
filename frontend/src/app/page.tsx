@@ -40,9 +40,8 @@ export default function Home() {
             one flow.
           </h1>
           <p className="mt-4 max-w-2xl text-sm leading-6 text-gray-600">
-            Start from the department you need. Sales creates demand, inventory
-            checks availability, production fulfills shortages, and procurement
-            keeps raw materials moving.
+           Start from any department. Sales creates demand, inventory checks stock availability,
+            production handles shortages, and procurement keeps raw materials available.
           </p>
         </section>
 

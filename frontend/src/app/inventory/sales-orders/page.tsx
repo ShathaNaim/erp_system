@@ -22,7 +22,7 @@ const inventoryApi = "http://127.0.0.1:8000/api/inventory";
 const productionOrdersApi =
   "http://127.0.0.1:8000/api/production/production-orders/";
 
-function getAuthHeaders() {
+function getAuthHeaders(): Record<string, string> {
   const token = localStorage.getItem("access_token");
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
