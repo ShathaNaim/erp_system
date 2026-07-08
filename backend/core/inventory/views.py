@@ -23,6 +23,15 @@ from .services import (
 )
 
 
+def get_sales_order_by_reference(sales_order_ref):
+    if str(sales_order_ref).isdigit():
+        sales_order = SalesOrder.objects.filter(id=sales_order_ref).first()
+        if sales_order:
+            return sales_order
+
+    return get_object_or_404(SalesOrder, order_number=sales_order_ref)
+
+
 class FinishedProductStockListView(ListAPIView):
     queryset = FinishedProduct.objects.filter(is_active=True).order_by("name")
     serializer_class = FinishedProductStockSerializer
@@ -55,8 +64,8 @@ class FinishedProductInventoryCheckView(APIView):
 class SalesOrderInventoryCheckView(APIView):
     permission_classes = [IsAuthenticated]
 
-    def get(self, request, sales_order_id):
-        sales_order = get_object_or_404(SalesOrder, id=sales_order_id)
+    def get(self, request, sales_order_ref):
+        sales_order = get_sales_order_by_reference(sales_order_ref)
         results = check_sales_order_inventory(sales_order)
         serializer = SalesOrderInventoryLineCheckSerializer(results, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
@@ -65,8 +74,8 @@ class SalesOrderInventoryCheckView(APIView):
 class SalesOrderShipmentView(APIView):
     permission_classes = [IsAuthenticated]
 
-    def post(self, request, sales_order_id):
-        sales_order = get_object_or_404(SalesOrder, id=sales_order_id)
+    def post(self, request, sales_order_ref):
+        sales_order = get_sales_order_by_reference(sales_order_ref)
 
         try:
             shipped_order = ship_sales_order(sales_order)

@@ -26,6 +26,20 @@ class EmployeePermission(BasePermission):
             or profile.department in self.allowed_departments
         )
 
+class IsAdminOrManager(BasePermission):
+    def has_permission(self, request, view):
+        profile = getattr(request.user, "employee_profile", None)
+        return bool(
+            request.user.is_staff
+            or profile
+            and profile.role in [
+                "admin",
+                "sales_manager",
+                "inventory_manager",
+                "production_manager",
+                "procurement_manager",
+            ]
+        )
 
 class IsProcurementManager(EmployeePermission):
     allowed_roles = [EmployeeProfile.Role.PROCUREMENT_MANAGER]
@@ -49,3 +63,5 @@ class IsProductionManager(EmployeePermission):
 
 class IsProductionEmployee(EmployeePermission):
     allowed_departments = [EmployeeProfile.Department.PRODUCTION]
+
+

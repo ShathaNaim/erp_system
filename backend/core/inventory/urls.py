@@ -25,12 +25,12 @@ urlpatterns = [
         name="finished-product-inventory-check",
     ),
     path(
-        "sales-orders/<int:sales_order_id>/check/",
+        "sales-orders/<str:sales_order_ref>/check/",
         SalesOrderInventoryCheckView.as_view(),
         name="sales-order-inventory-check",
     ),
     path(
-        "sales-orders/<int:sales_order_id>/ship/",
+        "sales-orders/<str:sales_order_ref>/ship/",
         SalesOrderShipmentView.as_view(),
         name="sales-order-shipment",
     ),

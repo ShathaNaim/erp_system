@@ -154,7 +154,8 @@ export default function ProductionOrdersPage() {
     if (res.status === 401) return;
 
     if (!res.ok) {
-      alert(`Failed to ${action} production order`);
+      const error = await res.json().catch(() => null);
+      alert(error?.detail ?? `Failed to ${action} production order`);
       return;
     }
 
@@ -183,7 +184,8 @@ export default function ProductionOrdersPage() {
     if (res.status === 401) return;
 
     if (!res.ok) {
-      alert("Failed to complete production order");
+      const error = await res.json().catch(() => null);
+      alert(error?.detail ?? "Failed to complete production order");
       return;
     }
 

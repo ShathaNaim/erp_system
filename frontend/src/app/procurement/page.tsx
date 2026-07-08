@@ -9,6 +9,15 @@ type ProcurementStats = {
   materials: number;
 };
 
+type RecentPurchaseOrder = {
+  id: number;
+  order_number: string;
+  supplier: number;
+  status: string;
+  order_date: string;
+  supplier_name?: string;
+};
+
 const initialStats: ProcurementStats = {
   orders: 0,
   suppliers: 0,
@@ -42,6 +51,7 @@ const procurementSections = [
 
 export default function ProcurementPage() {
   const [stats, setStats] = useState<ProcurementStats>(initialStats);
+  const [recentOrders, setRecentOrders] = useState<RecentPurchaseOrder[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -77,14 +87,26 @@ export default function ProcurementPage() {
           suppliersRes.json(),
           materialsRes.json(),
         ]);
+        const orderList = Array.isArray(orders) ? orders : [];
+        const supplierList = Array.isArray(suppliers) ? suppliers : [];
+        const supplierNames = new Map(
+          supplierList.map((supplier) => [supplier.id, supplier.name])
+        );
 
         setStats({
-          orders: Array.isArray(orders) ? orders.length : 0,
-          suppliers: Array.isArray(suppliers) ? suppliers.length : 0,
+          orders: orderList.length,
+          suppliers: supplierList.length,
           materials: Array.isArray(materials) ? materials.length : 0,
         });
+        setRecentOrders(
+          orderList.slice(0, 4).map((order) => ({
+            ...order,
+            supplier_name: supplierNames.get(order.supplier) ?? "Supplier",
+          }))
+        );
       } catch {
         setStats(initialStats);
+        setRecentOrders([]);
       } finally {
         setLoading(false);
       }
@@ -138,6 +160,50 @@ export default function ProcurementPage() {
               </p>
             </Link>
           ))}
+        </section>
+
+        <section className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
+          <div className="mb-4 flex items-center justify-between gap-4">
+            <div>
+              <p className="text-sm font-semibold text-emerald-700">Recent</p>
+              <h2 className="text-xl font-bold text-gray-950">
+                Recent Purchase Orders
+              </h2>
+            </div>
+            <Link
+              href="/procurement/purchase-order"
+              className="text-sm font-semibold text-emerald-700 hover:underline"
+            >
+              View all
+            </Link>
+          </div>
+
+          {loading ? (
+            <p className="text-sm text-gray-500">Loading purchase orders...</p>
+          ) : recentOrders.length === 0 ? (
+            <p className="text-sm text-gray-500">No recent purchase orders.</p>
+          ) : (
+            <div className="divide-y divide-gray-100">
+              {recentOrders.map((order) => (
+                <div
+                  key={order.id}
+                  className="flex flex-col justify-between gap-2 py-3 sm:flex-row sm:items-center"
+                >
+                  <div>
+                    <p className="font-semibold text-gray-950">
+                      {order.order_number}
+                    </p>
+                    <p className="text-sm text-gray-500">
+                      {order.supplier_name} - {order.order_date}
+                    </p>
+                  </div>
+                  <span className="w-fit rounded-full bg-gray-100 px-3 py-1 text-xs font-semibold capitalize text-gray-700">
+                    {order.status.replace("_", " ")}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
         </section>
       </div>
     </main>

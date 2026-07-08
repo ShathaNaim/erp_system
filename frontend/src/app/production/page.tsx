@@ -9,6 +9,15 @@ type ProductionStats = {
   products: number;
 };
 
+type RecentProductionOrder = {
+  id: number;
+  order_number: string;
+  product_name: string;
+  planned_quantity: string;
+  produced_quantity: string;
+  status: string;
+};
+
 const initialStats: ProductionStats = {
   orders: 0,
   openOrders: 0,
@@ -44,6 +53,7 @@ const productionSections = [
 
 export default function ProductionPage() {
   const [stats, setStats] = useState<ProductionStats>(initialStats);
+  const [recentOrders, setRecentOrders] = useState<RecentProductionOrder[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -74,17 +84,19 @@ export default function ProductionPage() {
           productsRes.json(),
         ]);
         const orderList = Array.isArray(orders) ? orders : [];
+        const openOrderList = orderList.filter(
+          (order) => order.status !== "completed" && order.status !== "cancelled"
+        );
 
         setStats({
           orders: orderList.length,
-          openOrders: orderList.filter(
-            (order) =>
-              order.status !== "completed" && order.status !== "cancelled"
-          ).length,
+          openOrders: openOrderList.length,
           products: Array.isArray(products) ? products.length : 0,
         });
+        setRecentOrders(openOrderList.slice(0, 4));
       } catch {
         setStats(initialStats);
+        setRecentOrders([]);
       } finally {
         setLoading(false);
       }
@@ -136,6 +148,51 @@ export default function ProductionPage() {
               </p>
             </Link>
           ))}
+        </section>
+
+        <section className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
+          <div className="mb-4 flex items-center justify-between gap-4">
+            <div>
+              <p className="text-sm font-semibold text-emerald-700">Recent</p>
+              <h2 className="text-xl font-bold text-gray-950">
+                Recent Open Production Orders
+              </h2>
+            </div>
+            <Link
+              href="/production/orders"
+              className="text-sm font-semibold text-emerald-700 hover:underline"
+            >
+              View all
+            </Link>
+          </div>
+
+          {loading ? (
+            <p className="text-sm text-gray-500">Loading production orders...</p>
+          ) : recentOrders.length === 0 ? (
+            <p className="text-sm text-gray-500">No open production orders.</p>
+          ) : (
+            <div className="divide-y divide-gray-100">
+              {recentOrders.map((order) => (
+                <div
+                  key={order.id}
+                  className="flex flex-col justify-between gap-2 py-3 sm:flex-row sm:items-center"
+                >
+                  <div>
+                    <p className="font-semibold text-gray-950">
+                      {order.order_number}
+                    </p>
+                    <p className="text-sm text-gray-500">
+                      {order.product_name} - produced {order.produced_quantity} /
+                      {order.planned_quantity}
+                    </p>
+                  </div>
+                  <span className="w-fit rounded-full bg-amber-50 px-3 py-1 text-xs font-semibold capitalize text-amber-700">
+                    {order.status.replace("_", " ")}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
         </section>
       </div>
     </main>

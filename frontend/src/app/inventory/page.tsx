@@ -9,6 +9,23 @@ type InventoryStats = {
   lowMaterials: number;
 };
 
+type RecentFinishedProduct = {
+  id: number;
+  sku: string;
+  name: string;
+  available_quantity: string;
+  unit: string;
+};
+
+type RecentRawMaterial = {
+  id: number;
+  sku: string;
+  name: string;
+  available_quantity: string;
+  reorder_level: string;
+  unit: string;
+};
+
 const initialStats: InventoryStats = {
   finishedProducts: 0,
   rawMaterials: 0,
@@ -43,6 +60,10 @@ const inventorySections = [
 
 export default function InventoryPage() {
   const [stats, setStats] = useState<InventoryStats>(initialStats);
+  const [recentProducts, setRecentProducts] = useState<RecentFinishedProduct[]>(
+    []
+  );
+  const [lowMaterials, setLowMaterials] = useState<RecentRawMaterial[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -73,20 +94,25 @@ export default function InventoryPage() {
           rawRes.json(),
         ]);
         const rawList = Array.isArray(rawMaterials) ? rawMaterials : [];
+        const finishedList = Array.isArray(finishedProducts)
+          ? finishedProducts
+          : [];
+        const lowMaterialList = rawList.filter(
+          (material) =>
+            Number(material.available_quantity) <= Number(material.reorder_level)
+        );
 
         setStats({
-          finishedProducts: Array.isArray(finishedProducts)
-            ? finishedProducts.length
-            : 0,
+          finishedProducts: finishedList.length,
           rawMaterials: rawList.length,
-          lowMaterials: rawList.filter(
-            (material) =>
-              Number(material.available_quantity) <=
-              Number(material.reorder_level)
-          ).length,
+          lowMaterials: lowMaterialList.length,
         });
+        setRecentProducts(finishedList.slice(0, 4));
+        setLowMaterials(lowMaterialList.slice(0, 4));
       } catch {
         setStats(initialStats);
+        setRecentProducts([]);
+        setLowMaterials([]);
       } finally {
         setLoading(false);
       }
@@ -138,6 +164,73 @@ export default function InventoryPage() {
               </p>
             </Link>
           ))}
+        </section>
+
+        <section className="grid gap-4 lg:grid-cols-2">
+          <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
+            <div className="mb-4 flex items-center justify-between gap-4">
+              <div>
+                <p className="text-sm font-semibold text-emerald-700">Recent</p>
+                <h2 className="text-xl font-bold text-gray-950">
+                  Recent Stock Items
+                </h2>
+              </div>
+              <Link
+                href="/inventory/stock"
+                className="text-sm font-semibold text-emerald-700 hover:underline"
+              >
+                View stock
+              </Link>
+            </div>
+
+            {loading ? (
+              <p className="text-sm text-gray-500">Loading stock...</p>
+            ) : recentProducts.length === 0 ? (
+              <p className="text-sm text-gray-500">No finished products found.</p>
+            ) : (
+              <div className="divide-y divide-gray-100">
+                {recentProducts.map((product) => (
+                  <div key={product.id} className="py-3">
+                    <p className="font-semibold text-gray-950">
+                      {product.sku} - {product.name}
+                    </p>
+                    <p className="text-sm text-gray-500">
+                      Available: {product.available_quantity} {product.unit}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
+            <p className="text-sm font-semibold text-emerald-700">Attention</p>
+            <h2 className="text-xl font-bold text-gray-950">
+              Low Raw Materials
+            </h2>
+
+            {loading ? (
+              <p className="mt-4 text-sm text-gray-500">Loading materials...</p>
+            ) : lowMaterials.length === 0 ? (
+              <p className="mt-4 text-sm text-gray-500">
+                No low raw materials right now.
+              </p>
+            ) : (
+              <div className="mt-4 divide-y divide-gray-100">
+                {lowMaterials.map((material) => (
+                  <div key={material.id} className="py-3">
+                    <p className="font-semibold text-gray-950">
+                      {material.sku} - {material.name}
+                    </p>
+                    <p className="text-sm text-gray-500">
+                      {material.available_quantity} {material.unit} available,
+                      reorder at {material.reorder_level}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </section>
       </div>
     </main>

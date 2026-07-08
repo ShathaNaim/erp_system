@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import AddSupplierForm, { Supplier } from "@/components/add-supplier-form";
+import { showConfirm } from "@/components/AppNotifications";
 
 type CurrentUser = {
   id: number;
@@ -121,7 +122,7 @@ export default function SupplierPage() {
   }
 
   async function deleteSupplier(supplier: Supplier) {
-    const confirmed = window.confirm(`Delete supplier "${supplier.name}"?`);
+    const confirmed = await showConfirm(`Delete supplier "${supplier.name}"?`);
     if (!confirmed) return;
 
     const token = localStorage.getItem("access_token");

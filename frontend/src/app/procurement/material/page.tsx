@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import AddMaterialForm, { Material } from "@/components/add-material-form";
+import { showConfirm } from "@/components/AppNotifications";
 
 type CurrentUser = {
   id: number;
@@ -129,7 +130,7 @@ export default function MaterialPage() {
   }
 
   async function deleteMaterial(material: Material) {
-    const confirmed = window.confirm(`Delete material "${material.name}"?`);
+    const confirmed = await showConfirm(`Delete material "${material.name}"?`);
     if (!confirmed) return;
 
     const token = localStorage.getItem("access_token");

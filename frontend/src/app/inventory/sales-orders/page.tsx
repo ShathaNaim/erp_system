@@ -45,7 +45,7 @@ function RouteBadge({ route }: { route: InventoryCheck["route"] }) {
 }
 
 export default function InventorySalesOrdersPage() {
-  const [salesOrderId, setSalesOrderId] = useState("");
+  const [salesOrderRef, setSalesOrderRef] = useState("");
   const [salesOrderCheck, setSalesOrderCheck] = useState<
     SalesOrderInventoryCheck[]
   >([]);
@@ -70,12 +70,19 @@ export default function InventorySalesOrdersPage() {
     setChecking(true);
 
     try {
-      const res = await fetch(`${inventoryApi}/sales-orders/${salesOrderId}/check/`, {
-        headers: getAuthHeaders(),
-      });
+      const res = await fetch(
+        `${inventoryApi}/sales-orders/${encodeURIComponent(salesOrderRef)}/check/`,
+        {
+          headers: getAuthHeaders(),
+        }
+      );
 
       if (!res.ok) {
-        alert("Failed to check sales order inventory");
+        const error = await res.json().catch(() => null);
+        alert(
+          error?.detail ??
+            "Sales order was not found. Enter the order number or database ID."
+        );
         return;
       }
 
@@ -127,15 +134,18 @@ export default function InventorySalesOrdersPage() {
   }
 
   async function shipSalesOrder() {
-    if (!salesOrderId) return;
+    if (!salesOrderRef) return;
 
     setShipping(true);
 
     try {
-      const res = await fetch(`${inventoryApi}/sales-orders/${salesOrderId}/ship/`, {
-        method: "POST",
-        headers: getAuthHeaders(),
-      });
+      const res = await fetch(
+        `${inventoryApi}/sales-orders/${encodeURIComponent(salesOrderRef)}/ship/`,
+        {
+          method: "POST",
+          headers: getAuthHeaders(),
+        }
+      );
 
       if (!res.ok) {
         const error = await res.json().catch(() => null);
@@ -179,13 +189,12 @@ export default function InventorySalesOrdersPage() {
           <div className="mt-6 flex flex-col gap-4 sm:flex-row">
             <div className="flex-1">
               <label className="mb-1 block text-sm font-medium text-gray-700">
-                Sales Order ID
+                Sales Order Number or ID
               </label>
               <input
-                type="number"
-                min="1"
-                value={salesOrderId}
-                onChange={(e) => setSalesOrderId(e.target.value)}
+                type="text"
+                value={salesOrderRef}
+                onChange={(e) => setSalesOrderRef(e.target.value.trim())}
                 className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
                 required
               />

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import type { Customer } from "@/components/add-customer-form";
+import { showConfirm } from "@/components/AppNotifications";
 import AddOrderForm, {
   FinishedProduct,
   SalesOrder,
@@ -80,7 +81,9 @@ export default function OrderPage() {
   }
 
   async function deleteSalesOrder(order: SalesOrder) {
-    const confirmed = window.confirm(`Delete sales order "${order.order_number}"?`);
+    const confirmed = await showConfirm(
+      `Delete sales order "${order.order_number}"?`
+    );
     if (!confirmed) return;
 
     const token = localStorage.getItem("access_token");

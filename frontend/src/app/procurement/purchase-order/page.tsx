@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { showConfirm } from "@/components/AppNotifications";
 import PurchaseOrderForm, {
   SavedPurchaseOrder,
 } from "@/components/purchase-order-form";
@@ -75,7 +76,7 @@ export default function PurchaseOrderPage() {
   }
 
   async function deletePurchaseOrder(purchaseOrder: SavedPurchaseOrder) {
-    const confirmed = window.confirm(
+    const confirmed = await showConfirm(
       `Delete purchase order "${purchaseOrder.order_number}"?`
     );
     if (!confirmed) return;

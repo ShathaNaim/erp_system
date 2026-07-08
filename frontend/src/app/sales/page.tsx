@@ -8,6 +8,14 @@ type SalesStats = {
   orders: number;
 };
 
+type RecentSalesOrder = {
+  id: number;
+  order_number: string;
+  status: string;
+  order_date: string;
+  lines: unknown[];
+};
+
 const initialStats: SalesStats = {
   customers: 0,
   orders: 0,
@@ -33,6 +41,7 @@ const salesSections = [
 
 export default function SalesPage() {
   const [stats, setStats] = useState<SalesStats>(initialStats);
+  const [recentOrders, setRecentOrders] = useState<RecentSalesOrder[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -58,13 +67,16 @@ export default function SalesPage() {
           customersRes.json(),
           ordersRes.json(),
         ]);
+        const orderList = Array.isArray(orders) ? orders : [];
 
         setStats({
           customers: Array.isArray(customers) ? customers.length : 0,
-          orders: Array.isArray(orders) ? orders.length : 0,
+          orders: orderList.length,
         });
+        setRecentOrders(orderList.slice(0, 4));
       } catch {
         setStats(initialStats);
+        setRecentOrders([]);
       } finally {
         setLoading(false);
       }
@@ -117,6 +129,51 @@ export default function SalesPage() {
               </p>
             </Link>
           ))}
+        </section>
+
+        <section className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
+          <div className="mb-4 flex items-center justify-between gap-4">
+            <div>
+              <p className="text-sm font-semibold text-emerald-700">Recent</p>
+              <h2 className="text-xl font-bold text-gray-950">
+                Recent Sales Orders
+              </h2>
+            </div>
+            <Link
+              href="/sales/order"
+              className="text-sm font-semibold text-emerald-700 hover:underline"
+            >
+              View all
+            </Link>
+          </div>
+
+          {loading ? (
+            <p className="text-sm text-gray-500">Loading recent orders...</p>
+          ) : recentOrders.length === 0 ? (
+            <p className="text-sm text-gray-500">No recent sales orders.</p>
+          ) : (
+            <div className="divide-y divide-gray-100">
+              {recentOrders.map((order) => (
+                <div
+                  key={order.id}
+                  className="flex flex-col justify-between gap-2 py-3 sm:flex-row sm:items-center"
+                >
+                  <div>
+                    <p className="font-semibold text-gray-950">
+                      {order.order_number}
+                    </p>
+                    <p className="text-sm text-gray-500">
+                      {order.order_date} - {order.lines.length} item
+                      {order.lines.length === 1 ? "" : "s"}
+                    </p>
+                  </div>
+                  <span className="w-fit rounded-full bg-gray-100 px-3 py-1 text-xs font-semibold capitalize text-gray-700">
+                    {order.status.replace("_", " ")}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
         </section>
       </div>
     </main>

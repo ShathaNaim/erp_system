@@ -84,6 +84,28 @@ function orderLinesToInputs(order: SalesOrder): OrderLineInput[] {
   }));
 }
 
+function formatApiError(error: unknown): string {
+  if (!error) {
+    return "Failed to save sales order. Check the order and item data.";
+  }
+
+  if (typeof error === "string") {
+    return error;
+  }
+
+  if (Array.isArray(error)) {
+    return error.map(formatApiError).join("\n");
+  }
+
+  if (typeof error === "object") {
+    return Object.entries(error)
+      .map(([field, value]) => `${field}: ${formatApiError(value)}`)
+      .join("\n");
+  }
+
+  return String(error);
+}
+
 export default function AddOrderForm({
   customers,
   products,
@@ -211,7 +233,7 @@ export default function AddOrderForm({
     if (!res.ok) {
       const error = await res.json().catch(() => null);
       console.error("Sales order error:", error);
-      alert(error?.detail ?? "Failed to save sales order. Check the order and item data.");
+      alert(formatApiError(error));
       return;
     }
 

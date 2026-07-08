@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import AddCustomerForm, {
   Customer,
 } from "@/components/add-customer-form";
+import { showConfirm } from "@/components/AppNotifications";
 
 const customersUrl = "http://127.0.0.1:8000/api/sales/customers/";
 
@@ -87,7 +88,7 @@ export default function CustomerPage() {
   }
 
   async function deleteCustomer(customer: Customer) {
-    const confirmed = window.confirm(`Delete customer "${customer.name}"?`);
+    const confirmed = await showConfirm(`Delete customer "${customer.name}"?`);
     if (!confirmed) return;
 
     const token = localStorage.getItem("access_token");
