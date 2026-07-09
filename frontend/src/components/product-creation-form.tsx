@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState } from "react";import { apiUrl } from "@/lib/api-base";
+
 
 export type Product = {
   id: number;
@@ -39,7 +40,7 @@ export default function ProductCreationForm({
     }
 
     const res = await fetch(
-      "http://127.0.0.1:8000/api/production/finished-products/",
+      apiUrl("/api/production/finished-products/"),
       {
         method: "POST",
         headers: {

@@ -1,6 +1,7 @@
 from decimal import Decimal
 
 from rest_framework import serializers
+from .services import get_active_bom_for_product
 
 from .models import (
     BillOfMaterial,
@@ -161,6 +162,13 @@ class ProductionOrderSerializer(serializers.ModelSerializer):
             "created_at",
             "updated_at",
         ]
+    def create(self, validated_data):
+        if not validated_data.get("bill_of_material"):
+            validated_data["bill_of_material"] = get_active_bom_for_product(
+                validated_data["product"]
+            )
+
+        return super().create(validated_data)
 
     def get_source(self, order):
         if order.sales_order_line_id:

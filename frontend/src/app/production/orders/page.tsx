@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { authenticatedFetch } from "@/lib/api";
+import { apiUrl } from "@/lib/api-base";
 
 type ProductionOrder = {
   id: number;
@@ -37,9 +38,16 @@ type RawMaterialStock = {
   available_quantity: string;
 };
 
+type PaginatedResponse<T> = {
+  count: number;
+  next: string | null;
+  previous: string | null;
+  results: T[];
+};
+
 const productionOrdersUrl =
-  "http://127.0.0.1:8000/api/production/production-orders/";
-const rawMaterialsUrl = "http://127.0.0.1:8000/api/inventory/raw-materials/";
+  apiUrl("/api/production/production-orders/");
+const rawMaterialsUrl = apiUrl("/api/inventory/raw-materials/");
 
 function formatQuantity(value: string | number) {
   return Number(value).toLocaleString(undefined, { maximumFractionDigits: 3 });
@@ -89,6 +97,14 @@ export default function ProductionOrdersPage() {
   const [successMessages, setSuccessMessages] = useState<Record<number, string>>(
     {}
   );
+  const [page, setPage] = useState(1);
+  const [pagination, setPagination] = useState<
+    Omit<PaginatedResponse<ProductionOrder>, "results">
+  >({
+    count: 0,
+    next: null,
+    previous: null,
+  });
 
   const openOrders = useMemo(
     () =>
@@ -105,7 +121,11 @@ export default function ProductionOrdersPage() {
 
   const loadOrders = useCallback(async () => {
     const [ordersRes, rawMaterialsRes] = await Promise.all([
-      authenticatedFetch(productionOrdersUrl, {}, handleAuthExpired),
+      authenticatedFetch(
+        `${productionOrdersUrl}?page=${page}`,
+        {},
+        handleAuthExpired
+      ),
       authenticatedFetch(rawMaterialsUrl, {}, handleAuthExpired),
     ]);
 
@@ -119,12 +139,17 @@ export default function ProductionOrdersPage() {
     }
 
     const [ordersData, rawMaterialsData] = await Promise.all([
-      ordersRes.json() as Promise<ProductionOrder[]>,
+      ordersRes.json() as Promise<PaginatedResponse<ProductionOrder>>,
       rawMaterialsRes.json() as Promise<RawMaterialStock[]>,
     ]);
-    setOrders(ordersData);
+    setOrders(ordersData.results);
+    setPagination({
+      count: ordersData.count,
+      next: ordersData.next,
+      previous: ordersData.previous,
+    });
     setRawMaterials(rawMaterialsData);
-  }, [handleAuthExpired]);
+  }, [handleAuthExpired, page]);
 
   useEffect(() => {
     async function loadPage() {
@@ -301,7 +326,9 @@ export default function ProductionOrdersPage() {
               </p>
             </div>
             <p className="text-sm text-gray-500">
-              {loading ? "Loading..." : `${openOrders.length} open`}
+              {loading
+                ? "Loading..."
+                : `${openOrders.length} open on this page · ${pagination.count} total`}
             </p>
           </div>
 
@@ -370,14 +397,6 @@ export default function ProductionOrdersPage() {
 
                   <div className="mt-4 flex flex-col gap-3 border-t border-gray-100 pt-4 lg:flex-row lg:items-center">
                     <div className="flex flex-wrap gap-2">
-                      <button
-                        type="button"
-                        onClick={() => runOrderAction(order, "release")}
-                        disabled={order.status !== "planned"}
-                        className="rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40"
-                      >
-                        Release
-                      </button>
                       <button
                         type="button"
                         onClick={() => runOrderAction(order, "start")}
@@ -512,6 +531,29 @@ export default function ProductionOrdersPage() {
                   </div>
                 </article>
               ))}
+              <div className="flex flex-col items-center justify-between gap-3 border-t border-gray-100 pt-4 sm:flex-row">
+                <p className="text-sm text-gray-500">
+                  Page {page} · Showing {orders.length} of {pagination.count}
+                </p>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setPage((current) => Math.max(current - 1, 1))}
+                    disabled={!pagination.previous || loading}
+                    className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40"
+                  >
+                    Previous
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPage((current) => current + 1)}
+                    disabled={!pagination.next || loading}
+                    className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40"
+                  >
+                    Next
+                  </button>
+                </div>
+              </div>
             </div>
           )}
         </section>

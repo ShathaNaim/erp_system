@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { showConfirm } from "@/components/AppNotifications";
+import { apiUrl } from "@/lib/api-base";
 import PurchaseOrderForm, {
   SavedPurchaseOrder,
 } from "@/components/purchase-order-form";
@@ -20,7 +21,7 @@ export default function PurchaseOrderPage() {
         return;
       }
 
-      const res = await fetch("http://127.0.0.1:8000/api/procurement/purchase-orders/", {
+      const res = await fetch(apiUrl("/api/procurement/purchase-orders/"), {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -50,7 +51,7 @@ export default function PurchaseOrderPage() {
 
     try {
       const res = await fetch(
-        `http://127.0.0.1:8000/api/procurement/purchase-orders/${purchaseOrder.id}/receive/`,
+        apiUrl(`/api/procurement/purchase-orders/${purchaseOrder.id}/receive/`),
         {
           method: "POST",
           headers: {
@@ -85,7 +86,7 @@ export default function PurchaseOrderPage() {
     if (!token) return;
 
     const res = await fetch(
-      `http://127.0.0.1:8000/api/procurement/purchase-orders/${purchaseOrder.id}/`,
+      apiUrl(`/api/procurement/purchase-orders/${purchaseOrder.id}/`),
       {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` },
@@ -176,7 +177,7 @@ export default function PurchaseOrderPage() {
                       {purchaseOrder.lines.length}
                     </td>
                     <td className="py-3 pr-4 text-gray-700">
-                      <div className="flex flex-wrap gap-2">
+                      <div className="grid grid-cols-3 gap-2">
                         <button
                           type="button"
                           onClick={() => setEditingPurchaseOrder(purchaseOrder)}

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { apiUrl } from "@/lib/api-base";
 
 export type Customer = {
   id: number;
@@ -37,7 +38,7 @@ export default function AddCustomerForm({
       return;
     }
 
-    const res = await fetch("http://127.0.0.1:8000/api/sales/customers/", {
+    const res = await fetch(apiUrl("/api/sales/customers/"), {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

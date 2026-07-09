@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { apiUrl } from "@/lib/api-base";
 
 type InventoryStats = {
   finishedProducts: number;
@@ -77,10 +78,10 @@ export default function InventoryPage() {
       try {
         const headers = { Authorization: `Bearer ${token}` };
         const [finishedRes, rawRes] = await Promise.all([
-          fetch("http://127.0.0.1:8000/api/inventory/finished-products/", {
+          fetch(apiUrl("/api/inventory/finished-products/"), {
             headers,
           }),
-          fetch("http://127.0.0.1:8000/api/inventory/raw-materials/", {
+          fetch(apiUrl("/api/inventory/raw-materials/"), {
             headers,
           }),
         ]);

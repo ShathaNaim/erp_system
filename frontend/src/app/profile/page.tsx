@@ -1,7 +1,10 @@
 "use client";
 
 import Link from "next/link";
+import { apiUrl } from "@/lib/api-base";
+
 import { useEffect, useState } from "react";
+
 
 type CurrentUser = {
   id: number;
@@ -36,7 +39,7 @@ export default function ProfilePage() {
       }
 
       try {
-        const res = await fetch("http://127.0.0.1:8000/api/accounts/me/", {
+        const res = await fetch(apiUrl("/api/accounts/me/"), {
           headers: { Authorization: `Bearer ${token}` },
         });
 

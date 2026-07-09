@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { getUserHomePath } from "@/lib/auth-routing";
+import { apiUrl } from "@/lib/api-base";
 
 export default function LoginPage() {
   const [username, setUsername] = useState("");
@@ -19,7 +20,7 @@ export default function LoginPage() {
     setError("");
 
     try {
-      const res = await fetch("http://127.0.0.1:8000/api/accounts/token/", {
+      const res = await fetch(apiUrl("/api/accounts/token/"), {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -35,7 +36,7 @@ export default function LoginPage() {
       localStorage.setItem("access_token", data.access);
       localStorage.setItem("refresh_token", data.refresh);
 
-      const userRes = await fetch("http://127.0.0.1:8000/api/accounts/me/", {
+      const userRes = await fetch(apiUrl("/api/accounts/me/"), {
         headers: { Authorization: `Bearer ${data.access}` },
       });
 

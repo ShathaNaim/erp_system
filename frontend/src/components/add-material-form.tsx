@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { apiUrl } from "@/lib/api-base";
 
 export type Material = {
   id: number;
@@ -39,7 +40,7 @@ export default function AddMaterialForm({
     }
 
     const res = await fetch(
-      "http://127.0.0.1:8000/api/procurement/raw-materials/",
+      apiUrl("/api/procurement/raw-materials/"),
       {
         method: "POST",
         headers: {

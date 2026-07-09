@@ -2,13 +2,14 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { apiUrl } from "@/lib/api-base";
 import ProductCreationForm, {
   Product,
 } from "@/components/product-creation-form";
 
-const productsUrl = "http://127.0.0.1:8000/api/production/finished-products/";
-const bomsUrl = "http://127.0.0.1:8000/api/production/bill-of-materials/";
-const rawMaterialsUrl = "http://127.0.0.1:8000/api/inventory/raw-materials/";
+const productsUrl = apiUrl("/api/production/finished-products/");
+const bomsUrl = apiUrl("/api/production/bill-of-materials/");
+const rawMaterialsUrl = apiUrl("/api/inventory/raw-materials/");
 
 type RawMaterial = {
   id: number;

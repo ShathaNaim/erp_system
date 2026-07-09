@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState } from "react";import { apiUrl } from "@/lib/api-base";
+
 
 type Supplier = {
   id: number;
@@ -92,7 +93,7 @@ export default function PurchaseOrderForm({
     async function loadSuppliers() {
       const token = localStorage.getItem("access_token");
 
-      const res = await fetch("http://127.0.0.1:8000/api/procurement/suppliers/", {
+      const res = await fetch(apiUrl("/api/procurement/suppliers/"), {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -114,7 +115,7 @@ export default function PurchaseOrderForm({
     async function loadRawMaterials() {
       const token = localStorage.getItem("access_token");
 
-      const res = await fetch("http://127.0.0.1:8000/api/procurement/raw-materials/", {
+      const res = await fetch(apiUrl("/api/procurement/raw-materials/"), {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -162,8 +163,8 @@ export default function PurchaseOrderForm({
     const token = localStorage.getItem("access_token");
 
     const url = initialPurchaseOrder
-      ? `http://127.0.0.1:8000/api/procurement/purchase-orders/${initialPurchaseOrder.id}/`
-      : "http://127.0.0.1:8000/api/procurement/purchase-orders/";
+      ? apiUrl(`/api/procurement/purchase-orders/${initialPurchaseOrder.id}/`)
+      : apiUrl("/api/procurement/purchase-orders/");
 
     const res = await fetch(url, {
       method: initialPurchaseOrder ? "PUT" : "POST",

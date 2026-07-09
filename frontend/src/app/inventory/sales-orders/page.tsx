@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { apiUrl } from "@/lib/api-base";
 
 type InventoryCheck = {
   product_id: number;
@@ -18,9 +19,9 @@ type SalesOrderInventoryCheck = InventoryCheck & {
   sales_order_line_id: number;
 };
 
-const inventoryApi = "http://127.0.0.1:8000/api/inventory";
+const inventoryApi = apiUrl("/api/inventory");
 const productionOrdersApi =
-  "http://127.0.0.1:8000/api/production/production-orders/";
+  apiUrl("/api/production/production-orders/");
 
 function getAuthHeaders(): Record<string, string> {
   const token = localStorage.getItem("access_token");

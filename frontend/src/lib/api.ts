@@ -1,4 +1,6 @@
-const tokenRefreshUrl = "http://127.0.0.1:8000/api/accounts/token/refresh/";
+import { apiUrl } from "@/lib/api-base";
+
+const tokenRefreshUrl = apiUrl("/api/accounts/token/refresh/");
 
 export function getAuthHeaders(): Record<string, string> {
   const token = localStorage.getItem("access_token");

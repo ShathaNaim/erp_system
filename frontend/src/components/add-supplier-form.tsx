@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { apiUrl } from "@/lib/api-base";
 
 export type Supplier = {
   id: number;
@@ -35,7 +36,7 @@ export default function AddSupplierForm({
     }
 
     const res = await fetch(
-      "http://127.0.0.1:8000/api/procurement/suppliers/",
+      apiUrl("/api/procurement/suppliers/"),
       {
         method: "POST",
         headers: {

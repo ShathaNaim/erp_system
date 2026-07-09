@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import AddMaterialForm, { Material } from "@/components/add-material-form";
 import { showConfirm } from "@/components/AppNotifications";
+import { apiUrl } from "@/lib/api-base";
 
 type CurrentUser = {
   id: number;
@@ -38,7 +39,7 @@ export default function MaterialPage() {
       }
 
       try {
-        const res = await fetch("http://127.0.0.1:8000/api/accounts/me/", {
+        const res = await fetch(apiUrl("/api/accounts/me/"), {
           headers: { Authorization: `Bearer ${token}` },
         });
 
@@ -63,7 +64,7 @@ export default function MaterialPage() {
       if (!token) return;
 
       const res = await fetch(
-        "http://127.0.0.1:8000/api/procurement/raw-materials/",
+        apiUrl("/api/procurement/raw-materials/"),
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
@@ -100,7 +101,7 @@ export default function MaterialPage() {
     if (!token) return;
 
     const res = await fetch(
-      `http://127.0.0.1:8000/api/procurement/raw-materials/${editingMaterial.id}/`,
+      apiUrl(`/api/procurement/raw-materials/${editingMaterial.id}/`),
       {
         method: "PUT",
         headers: {
@@ -137,7 +138,7 @@ export default function MaterialPage() {
     if (!token) return;
 
     const res = await fetch(
-      `http://127.0.0.1:8000/api/procurement/raw-materials/${material.id}/`,
+      apiUrl(`/api/procurement/raw-materials/${material.id}/`),
       {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` },
@@ -297,7 +298,7 @@ export default function MaterialPage() {
                       {material.reorder_level}
                     </td>
                     <td className="py-3 pr-4">
-                      <div className="flex flex-wrap gap-2">
+                      <div className=" grid grid-cols-2 gap-2">
                         <button
                           type="button"
                           onClick={() => startEditingMaterial(material)}

@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { apiUrl } from "@/lib/api-base";
 
 type ProcurementStats = {
   orders: number;
@@ -67,13 +68,13 @@ export default function ProcurementPage() {
           : {};
 
         const [ordersRes, suppliersRes, materialsRes] = await Promise.all([
-          fetch("http://127.0.0.1:8000/api/procurement/purchase-orders/", {
+          fetch(apiUrl("/api/procurement/purchase-orders/"), {
             headers,
           }),
-          fetch("http://127.0.0.1:8000/api/procurement/suppliers/", {
+          fetch(apiUrl("/api/procurement/suppliers/"), {
             headers,
           }),
-          fetch("http://127.0.0.1:8000/api/procurement/raw-materials/", {
+          fetch(apiUrl("/api/procurement/raw-materials/"), {
             headers,
           }),
         ]);

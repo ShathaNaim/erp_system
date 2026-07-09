@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { apiUrl } from "@/lib/api-base";
 
 type ProductionStats = {
   orders: number;
@@ -67,10 +68,10 @@ export default function ProductionPage() {
       try {
         const headers = { Authorization: `Bearer ${token}` };
         const [ordersRes, productsRes] = await Promise.all([
-          fetch("http://127.0.0.1:8000/api/production/production-orders/", {
+          fetch(apiUrl("/api/production/production-orders/"), {
             headers,
           }),
-          fetch("http://127.0.0.1:8000/api/production/finished-products/", {
+          fetch(apiUrl("/api/production/finished-products/"), {
             headers,
           }),
         ]);

@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { apiUrl } from "@/lib/api-base";
 
 type SalesStats = {
   customers: number;
@@ -55,8 +56,8 @@ export default function SalesPage() {
       try {
         const headers = { Authorization: `Bearer ${token}` };
         const [customersRes, ordersRes] = await Promise.all([
-          fetch("http://127.0.0.1:8000/api/sales/customers/", { headers }),
-          fetch("http://127.0.0.1:8000/api/sales/sales-orders/", { headers }),
+          fetch(apiUrl("/api/sales/customers/"), { headers }),
+          fetch(apiUrl("/api/sales/sales-orders/"), { headers }),
         ]);
 
         if (!customersRes.ok || !ordersRes.ok) {

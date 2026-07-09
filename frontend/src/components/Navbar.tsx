@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
+import { apiUrl } from "@/lib/api-base";
 
 type CurrentUser = {
   username: string;
@@ -56,7 +57,7 @@ export default function Navbar({ children }: NavbarProps) {
       }
 
       try {
-        const res = await fetch("http://127.0.0.1:8000/api/accounts/me/", {
+        const res = await fetch(apiUrl("/api/accounts/me/"), {
           headers: { Authorization: `Bearer ${token}` },
         });
 

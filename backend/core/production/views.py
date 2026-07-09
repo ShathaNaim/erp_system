@@ -5,6 +5,7 @@ from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
+from rest_framework.pagination import PageNumberPagination
 
 from inventory.services import (
     consume_raw_material_for_production,
@@ -32,6 +33,11 @@ from .serializer import (
     ProductionScheduleSerializer,
 )
 
+
+class ProductionOrderPagination(PageNumberPagination):
+    page_size = 10
+    page_size_query_param = "page_size"
+    max_page_size = 50
 
 def _get_consumed_quantity_for_bom_line(production_order, bom_line):
     consumed_quantity = production_order.material_consumptions.filter(
@@ -160,6 +166,7 @@ class ProductionScheduleViewSet(viewsets.ModelViewSet):
 
 
 class ProductionOrderViewSet(viewsets.ModelViewSet):
+
     queryset = (
         ProductionOrder.objects.select_related(
             "product",
@@ -173,14 +180,7 @@ class ProductionOrderViewSet(viewsets.ModelViewSet):
     )
     serializer_class = ProductionOrderSerializer
     permission_classes = [IsAuthenticated]
-
-    @action(detail=True, methods=["post"])
-    def release(self, request, pk=None):
-        production_order = self.get_object()
-        production_order.status = ProductionOrder.Status.RELEASED
-        production_order.save(update_fields=["status", "updated_at"])
-        serializer = self.get_serializer(production_order)
-        return Response(serializer.data)
+    pagination_class = ProductionOrderPagination
 
     @action(detail=True, methods=["post"])
     def start(self, request, pk=None):

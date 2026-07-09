@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { apiUrl } from "@/lib/api-base";
 
 type FinishedProductStock = {
   id: number;
@@ -21,7 +22,7 @@ type RawMaterialStock = {
   available_quantity: string;
 };
 
-const inventoryApi = "http://127.0.0.1:8000/api/inventory";
+const inventoryApi = apiUrl("/api/inventory");
 
 function getAuthHeaders(): Record<string, string> {
   const token = localStorage.getItem("access_token");

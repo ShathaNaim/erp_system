@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import type { Product } from "@/components/product-creation-form";
+import { apiUrl } from "@/lib/api-base";
 
 type ProductionOrder = {
   id: number;
@@ -25,10 +26,10 @@ type BillOfMaterial = {
   is_active: boolean;
 };
 
-const productsUrl = "http://127.0.0.1:8000/api/production/finished-products/";
-const bomsUrl = "http://127.0.0.1:8000/api/production/bill-of-materials/";
+const productsUrl = apiUrl("/api/production/finished-products/");
+const bomsUrl = apiUrl("/api/production/bill-of-materials/");
 const productionOrdersUrl =
-  "http://127.0.0.1:8000/api/production/production-orders/";
+  apiUrl("/api/production/production-orders/");
 
 function getAuthHeaders(): Record<string, string> {
   const token = localStorage.getItem("access_token");

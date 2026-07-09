@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import type { Customer } from "@/components/add-customer-form";
+import { apiUrl } from "@/lib/api-base";
 
 export type FinishedProduct = {
   id: number;
@@ -210,8 +211,8 @@ export default function AddOrderForm({
     }));
 
     const url = initialOrder
-      ? `http://127.0.0.1:8000/api/sales/sales-orders/${initialOrder.id}/`
-      : "http://127.0.0.1:8000/api/sales/sales-orders/";
+      ? apiUrl(`/api/sales/sales-orders/${initialOrder.id}/`)
+      : apiUrl("/api/sales/sales-orders/");
 
     const res = await fetch(url, {
       method: initialOrder ? "PUT" : "POST",

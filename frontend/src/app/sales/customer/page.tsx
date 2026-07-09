@@ -2,12 +2,13 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { apiUrl } from "@/lib/api-base";
 import AddCustomerForm, {
   Customer,
 } from "@/components/add-customer-form";
 import { showConfirm } from "@/components/AppNotifications";
 
-const customersUrl = "http://127.0.0.1:8000/api/sales/customers/";
+const customersUrl = apiUrl("/api/sales/customers/");
 
 export default function CustomerPage() {
   const [customers, setCustomers] = useState<Customer[]>([]);

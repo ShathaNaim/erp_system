@@ -1,15 +1,16 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { Customer } from "@/components/add-customer-form";
 import { showConfirm } from "@/components/AppNotifications";
+import { apiUrl } from "@/lib/api-base";
 import AddOrderForm, {
   FinishedProduct,
   SalesOrder,
 } from "@/components/add-order-form";
 
-const salesApi = "http://127.0.0.1:8000/api/sales";
+const salesApi = apiUrl("/api/sales");
 
 export default function OrderPage() {
   const [customers, setCustomers] = useState<Customer[]>([]);
@@ -19,6 +20,7 @@ export default function OrderPage() {
   const [confirmingOrderId, setConfirmingOrderId] = useState<number | null>(
     null
   );
+  const formSectionRef = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
     async function loadOrderData() {
@@ -109,6 +111,16 @@ export default function OrderPage() {
     }
   }
 
+  function editSalesOrder(order: SalesOrder) {
+    setEditingOrder(order);
+    requestAnimationFrame(() => {
+      formSectionRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    });
+  }
+
   return (
     <main className="min-h-screen bg-gray-50 px-6 py-10">
       <div className="mx-auto max-w-5xl">
@@ -119,9 +131,11 @@ export default function OrderPage() {
           &larr; Back to Sales
         </Link>
 
-        <section className="rounded-lg bg-white p-8 shadow-sm">
+        <section ref={formSectionRef} className="rounded-lg bg-white p-8 shadow-sm">
           <h1 className="mb-2 text-2xl font-bold text-gray-900">
-            {editingOrder ? "Edit Sales Order" : "Add Sales Order"}
+            {editingOrder
+              ? `Edit Sales Order: ${editingOrder.order_number}`
+              : "Add Sales Order"}
           </h1>
           <p className="mb-6 text-sm text-gray-600">
             {editingOrder
@@ -191,7 +205,7 @@ export default function OrderPage() {
                         <div className="flex flex-wrap gap-2">
                           <button
                             type="button"
-                            onClick={() => setEditingOrder(order)}
+                            onClick={() => editSalesOrder(order)}
                             disabled={order.status !== "draft"}
                             className="rounded-lg border border-gray-300 px-3 py-2 text-xs font-semibold text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
                           >

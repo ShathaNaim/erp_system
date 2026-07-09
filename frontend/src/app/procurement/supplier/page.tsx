@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import AddSupplierForm, { Supplier } from "@/components/add-supplier-form";
 import { showConfirm } from "@/components/AppNotifications";
+import { apiUrl } from "@/lib/api-base";
 
 type CurrentUser = {
   id: number;
@@ -36,7 +37,7 @@ export default function SupplierPage() {
       }
 
       try {
-        const res = await fetch("http://127.0.0.1:8000/api/accounts/me/", {
+        const res = await fetch(apiUrl("/api/accounts/me/"), {
           headers: { Authorization: `Bearer ${token}` },
         });
 
@@ -61,7 +62,7 @@ export default function SupplierPage() {
       if (!token) return;
 
       const res = await fetch(
-        "http://127.0.0.1:8000/api/procurement/suppliers/",
+        apiUrl("/api/procurement/suppliers/"),
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
@@ -96,7 +97,7 @@ export default function SupplierPage() {
     if (!token) return;
 
     const res = await fetch(
-      `http://127.0.0.1:8000/api/procurement/suppliers/${editingSupplier.id}/`,
+      apiUrl(`/api/procurement/suppliers/${editingSupplier.id}/`),
       {
         method: "PUT",
         headers: {
@@ -129,7 +130,7 @@ export default function SupplierPage() {
     if (!token) return;
 
     const res = await fetch(
-      `http://127.0.0.1:8000/api/procurement/suppliers/${supplier.id}/`,
+      apiUrl(`/api/procurement/suppliers/${supplier.id}/`),
       {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` },
@@ -279,7 +280,7 @@ export default function SupplierPage() {
                       {supplier.phone || "-"}
                     </td>
                     <td className="py-3 pr-4">
-                      <div className="flex flex-wrap gap-2">
+                      <div className=" grid grid-cols-2 gap-2">
                         <button
                           type="button"
                           onClick={() => startEditingSupplier(supplier)}

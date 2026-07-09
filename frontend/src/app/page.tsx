@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { canSeeMainDashboard, getUserHomePath } from "@/lib/auth-routing";
+import { apiUrl } from "@/lib/api-base";
 
 type SalesOrder = {
   id: number;
@@ -364,7 +365,7 @@ export default function Home() {
       const headers = { Authorization: `Bearer ${token}` };
 
       try {
-        const userRes = await fetch("http://127.0.0.1:8000/api/accounts/me/", {
+        const userRes = await fetch(apiUrl("/api/accounts/me/"), {
           headers,
         });
 
@@ -388,17 +389,17 @@ export default function Home() {
           rawRes,
           finishedRes,
         ] = await Promise.all([
-          fetch("http://127.0.0.1:8000/api/sales/sales-orders/", { headers }),
-          fetch("http://127.0.0.1:8000/api/production/production-orders/", {
+          fetch(apiUrl("/api/sales/sales-orders/"), { headers }),
+          fetch(apiUrl("/api/production/production-orders/"), {
             headers,
           }),
-          fetch("http://127.0.0.1:8000/api/procurement/purchase-orders/", {
+          fetch(apiUrl("/api/procurement/purchase-orders/"), {
             headers,
           }),
-          fetch("http://127.0.0.1:8000/api/inventory/raw-materials/", {
+          fetch(apiUrl("/api/inventory/raw-materials/"), {
             headers,
           }),
-          fetch("http://127.0.0.1:8000/api/inventory/finished-products/", {
+          fetch(apiUrl("/api/inventory/finished-products/"), {
             headers,
           }),
         ]);
