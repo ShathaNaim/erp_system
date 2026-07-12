@@ -26,6 +26,11 @@ type BillOfMaterial = {
   is_active: boolean;
 };
 
+type PaginatedResponse<T> = {
+  count: number;
+  results: T[];
+};
+
 const productsUrl = apiUrl("/api/production/finished-products/");
 const bomsUrl = apiUrl("/api/production/bill-of-materials/");
 const productionOrdersUrl =
@@ -34,6 +39,10 @@ const productionOrdersUrl =
 function getAuthHeaders(): Record<string, string> {
   const token = localStorage.getItem("access_token");
   return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
+function getList<T>(data: T[] | PaginatedResponse<T>): T[] {
+  return Array.isArray(data) ? data : data.results ?? [];
 }
 
 export default function PlanProductionPage() {
@@ -64,13 +73,15 @@ export default function PlanProductionPage() {
       const [productsData, bomsData, ordersData] = await Promise.all([
         productsRes.json() as Promise<Product[]>,
         bomsRes.json() as Promise<BillOfMaterial[]>,
-        ordersRes.json() as Promise<ProductionOrder[]>,
+        ordersRes.json() as Promise<
+          ProductionOrder[] | PaginatedResponse<ProductionOrder>
+        >,
       ]);
 
       setProducts(productsData);
       setBoms(bomsData);
       setPlannedOrders(
-        ordersData.filter((order) => order.sales_order_line === null)
+        getList(ordersData).filter((order) => order.sales_order_line === null)
       );
     }
 

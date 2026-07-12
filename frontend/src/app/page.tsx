@@ -56,6 +56,11 @@ type CurrentUser = {
   department?: string;
 };
 
+type PaginatedResponse<T> = {
+  count: number;
+  results: T[];
+};
+
 const initialData: DashboardData = {
   salesOrders: [],
   productionOrders: [],
@@ -63,6 +68,10 @@ const initialData: DashboardData = {
   rawMaterials: [],
   finishedProducts: [],
 };
+
+function getList<T>(data: T[] | PaginatedResponse<T>): T[] {
+  return Array.isArray(data) ? data : data.results ?? [];
+}
 
 function formatStatus(status: string) {
   return status
@@ -421,23 +430,25 @@ export default function Home() {
           rawMaterials,
           finishedProducts,
         ] = await Promise.all([
-          salesRes.json(),
-          productionRes.json(),
-          purchaseRes.json(),
-          rawRes.json(),
-          finishedRes.json(),
+          salesRes.json() as Promise<SalesOrder[] | PaginatedResponse<SalesOrder>>,
+          productionRes.json() as Promise<
+            ProductionOrder[] | PaginatedResponse<ProductionOrder>
+          >,
+          purchaseRes.json() as Promise<
+            PurchaseOrder[] | PaginatedResponse<PurchaseOrder>
+          >,
+          rawRes.json() as Promise<RawMaterial[] | PaginatedResponse<RawMaterial>>,
+          finishedRes.json() as Promise<
+            FinishedProduct[] | PaginatedResponse<FinishedProduct>
+          >,
         ]);
 
         setData({
-          salesOrders: Array.isArray(salesOrders) ? salesOrders : [],
-          productionOrders: Array.isArray(productionOrders)
-            ? productionOrders
-            : [],
-          purchaseOrders: Array.isArray(purchaseOrders) ? purchaseOrders : [],
-          rawMaterials: Array.isArray(rawMaterials) ? rawMaterials : [],
-          finishedProducts: Array.isArray(finishedProducts)
-            ? finishedProducts
-            : [],
+          salesOrders: getList(salesOrders),
+          productionOrders: getList(productionOrders),
+          purchaseOrders: getList(purchaseOrders),
+          rawMaterials: getList(rawMaterials),
+          finishedProducts: getList(finishedProducts),
         });
       } catch {
         setData(initialData);

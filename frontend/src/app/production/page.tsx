@@ -19,11 +19,24 @@ type RecentProductionOrder = {
   status: string;
 };
 
+type PaginatedResponse<T> = {
+  count: number;
+  results: T[];
+};
+
 const initialStats: ProductionStats = {
   orders: 0,
   openOrders: 0,
   products: 0,
 };
+
+function getList<T>(data: T[] | PaginatedResponse<T>): T[] {
+  return Array.isArray(data) ? data : data.results ?? [];
+}
+
+function getCount<T>(data: T[] | PaginatedResponse<T>): number {
+  return Array.isArray(data) ? data.length : data.count ?? getList(data).length;
+}
 
 const productionSections = [
   {
@@ -81,18 +94,20 @@ export default function ProductionPage() {
         }
 
         const [orders, products] = await Promise.all([
-          ordersRes.json(),
-          productsRes.json(),
+          ordersRes.json() as Promise<
+            RecentProductionOrder[] | PaginatedResponse<RecentProductionOrder>
+          >,
+          productsRes.json() as Promise<unknown[] | PaginatedResponse<unknown>>,
         ]);
-        const orderList = Array.isArray(orders) ? orders : [];
+        const orderList = getList(orders);
         const openOrderList = orderList.filter(
           (order) => order.status !== "completed" && order.status !== "cancelled"
         );
 
         setStats({
-          orders: orderList.length,
+          orders: getCount(orders),
           openOrders: openOrderList.length,
-          products: Array.isArray(products) ? products.length : 0,
+          products: getCount(products),
         });
         setRecentOrders(openOrderList.slice(0, 4));
       } catch {
