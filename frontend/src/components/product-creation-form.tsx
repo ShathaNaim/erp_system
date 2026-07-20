@@ -60,7 +60,7 @@ export default function ProductCreationForm({
     );
 
     if (res.status === 403) {
-      alert("You do not have permission to create products");
+      alert("Demo account is read-only. Changes are not allowed.");
       return;
     }
 

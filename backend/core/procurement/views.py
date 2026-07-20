@@ -6,7 +6,11 @@ from rest_framework import viewsets
 from rest_framework.decorators import action
 from rest_framework import status
 from rest_framework.response import Response
-from accounts.permissions import IsProcurementManager,IsProcurementEmployee
+from accounts.permissions import (
+    DemoReadOnlyPermission,
+    IsProcurementEmployee,
+    IsProcurementManager,
+)
 from rest_framework.permissions import IsAuthenticated
 # Create your views here.
 class RawMaterialViewSet(viewsets.ModelViewSet):
@@ -15,9 +19,13 @@ class RawMaterialViewSet(viewsets.ModelViewSet):
      
     def get_permissions(self):
         if self.action in ['create', 'update', 'partial_update', 'destroy']:
-            permission_classes = [IsAuthenticated, IsProcurementManager]
+            permission_classes = [
+                IsAuthenticated,
+                DemoReadOnlyPermission,
+                IsProcurementManager,
+            ]
         else:
-            permission_classes = [IsAuthenticated]
+            permission_classes = [IsAuthenticated, DemoReadOnlyPermission]
         return [permission() for permission in permission_classes]
 
     def destroy(self, request, *args, **kwargs):
@@ -34,9 +42,13 @@ class SupplierViewSet(viewsets.ModelViewSet):
     serializer_class = SupplierSerializer
     def get_permissions(self):
         if self.action in ['create', 'update', 'partial_update', 'destroy']:
-            permission_classes=[IsAuthenticated, IsProcurementManager]
+            permission_classes = [
+                IsAuthenticated,
+                DemoReadOnlyPermission,
+                IsProcurementManager,
+            ]
         else:
-            permission_classes=[IsAuthenticated]
+            permission_classes = [IsAuthenticated, DemoReadOnlyPermission]
 
         return [permission() for permission in permission_classes]      
 
@@ -52,7 +64,11 @@ class SupplierViewSet(viewsets.ModelViewSet):
 class PurchaseOrderViewSet(viewsets.ModelViewSet):
     queryset = PurchaseOrder.objects.all()
     serializer_class = PurchaseOrderSerializer
-    permission_classes = [IsAuthenticated,IsProcurementEmployee]
+    permission_classes = [
+        IsAuthenticated,
+        DemoReadOnlyPermission,
+        IsProcurementEmployee,
+    ]
 
     def update(self, request, *args, **kwargs):
         purchase_order = self.get_object()

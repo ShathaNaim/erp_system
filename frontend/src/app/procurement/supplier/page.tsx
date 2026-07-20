@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import AddSupplierForm, { Supplier } from "@/components/add-supplier-form";
 import { showConfirm } from "@/components/AppNotifications";
 import { apiUrl } from "@/lib/api-base";
+import { getActionErrorMessage } from "@/lib/api";
 
 type CurrentUser = {
   id: number;
@@ -109,7 +110,7 @@ export default function SupplierPage() {
     );
 
     if (!res.ok) {
-      alert("Failed to update supplier");
+      alert(getActionErrorMessage(res, "Failed to update supplier"));
       return;
     }
 

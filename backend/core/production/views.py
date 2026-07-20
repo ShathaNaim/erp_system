@@ -6,6 +6,7 @@ from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.pagination import PageNumberPagination
+from accounts.permissions import DemoReadOnlyPermission
 
 from inventory.services import (
     consume_raw_material_for_production,
@@ -135,7 +136,7 @@ def _consume_missing_bom_materials_for_output(production_order, produced_quantit
 class FinishedProductViewSet(viewsets.ModelViewSet):
     queryset = FinishedProduct.objects.all().order_by("name")
     serializer_class = FinishedProductSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, DemoReadOnlyPermission]
 
 
 class BillOfMaterialViewSet(viewsets.ModelViewSet):
@@ -146,13 +147,13 @@ class BillOfMaterialViewSet(viewsets.ModelViewSet):
         .order_by("product__name", "version")
     )
     serializer_class = BillOfMaterialSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, DemoReadOnlyPermission]
 
 
 class MachineViewSet(viewsets.ModelViewSet):
     queryset = Machine.objects.all().order_by("name")
     serializer_class = MachineSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, DemoReadOnlyPermission]
 
 
 class ProductionScheduleViewSet(viewsets.ModelViewSet):
@@ -162,7 +163,7 @@ class ProductionScheduleViewSet(viewsets.ModelViewSet):
         .order_by("start_time")
     )
     serializer_class = ProductionScheduleSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, DemoReadOnlyPermission]
 
 
 class ProductionOrderViewSet(viewsets.ModelViewSet):
@@ -179,7 +180,7 @@ class ProductionOrderViewSet(viewsets.ModelViewSet):
         .order_by("-created_at")
     )
     serializer_class = ProductionOrderSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, DemoReadOnlyPermission]
     pagination_class = ProductionOrderPagination
 
     @action(detail=True, methods=["post"])

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { apiUrl } from "@/lib/api-base";
+import { getActionErrorMessage } from "@/lib/api";
 
 export type Material = {
   id: number;
@@ -60,12 +61,12 @@ export default function AddMaterialForm({
     );
 
     if (res.status === 403) {
-      alert("You do not have permission to create materials");
+      alert(getActionErrorMessage(res, "You do not have permission to create materials"));
       return;
     }
 
     if (!res.ok) {
-      alert("Failed to save material");
+      alert(getActionErrorMessage(res, "Failed to save material"));
       return;
     }
 

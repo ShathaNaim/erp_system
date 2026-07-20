@@ -14,6 +14,12 @@ export default function LoginPage() {
 
   const router = useRouter();
 
+  function useDemoAccount() {
+    setUsername("demo");
+    setPassword("DemoERP2026!");
+    setError("");
+  }
+
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setLoading(true);
@@ -114,6 +120,18 @@ export default function LoginPage() {
             >
               {loading ? "Signing in..." : "Sign In"}
             </button>
+
+            <button
+              type="button"
+              onClick={useDemoAccount}
+              disabled={loading}
+              className="h-12 w-full rounded-lg border border-[#162640] px-5 font-semibold text-[#162640] transition hover:bg-[#d8f8f1] disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              Use Demo Account
+            </button>
+            <p className="text-center text-xs text-[#5d6b7f]">
+              Demo access is read-only.
+            </p>
 
             {error && (
               <p className="text-sm font-medium text-red-600">{error}</p>

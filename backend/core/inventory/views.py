@@ -8,6 +8,7 @@ from rest_framework.views import APIView
 from production.models import FinishedProduct
 from procurement.models import RawMaterial
 from sales.models import SalesOrder
+from accounts.permissions import DemoReadOnlyPermission
 
 from .serializer import (
     FinishedProductInventoryCheckRequestSerializer,
@@ -35,17 +36,17 @@ def get_sales_order_by_reference(sales_order_ref):
 class FinishedProductStockListView(ListAPIView):
     queryset = FinishedProduct.objects.filter(is_active=True).order_by("name")
     serializer_class = FinishedProductStockSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, DemoReadOnlyPermission]
 
 
 class RawMaterialStockListView(ListAPIView):
     queryset = RawMaterial.objects.filter(is_active=True).order_by("name")
     serializer_class = RawMaterialStockSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, DemoReadOnlyPermission]
 
 
 class FinishedProductInventoryCheckView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, DemoReadOnlyPermission]
 
     def post(self, request):
         request_serializer = FinishedProductInventoryCheckRequestSerializer(
@@ -62,7 +63,7 @@ class FinishedProductInventoryCheckView(APIView):
 
 
 class SalesOrderInventoryCheckView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, DemoReadOnlyPermission]
 
     def get(self, request, sales_order_ref):
         sales_order = get_sales_order_by_reference(sales_order_ref)
@@ -72,7 +73,7 @@ class SalesOrderInventoryCheckView(APIView):
 
 
 class SalesOrderShipmentView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, DemoReadOnlyPermission]
 
     def post(self, request, sales_order_ref):
         sales_order = get_sales_order_by_reference(sales_order_ref)

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import AddMaterialForm, { Material } from "@/components/add-material-form";
 import { showConfirm } from "@/components/AppNotifications";
 import { apiUrl } from "@/lib/api-base";
+import { getActionErrorMessage } from "@/lib/api";
 
 type CurrentUser = {
   id: number;
@@ -117,7 +118,7 @@ export default function MaterialPage() {
     );
 
     if (!res.ok) {
-      alert("Failed to update material");
+      alert(getActionErrorMessage(res, "Failed to update material"));
       return;
     }
 

@@ -99,6 +99,13 @@ function formatApiError(error: unknown): string {
   }
 
   if (typeof error === "object") {
+    if (
+      "detail" in error &&
+      typeof (error as { detail?: unknown }).detail === "string"
+    ) {
+      return (error as { detail: string }).detail;
+    }
+
     return Object.entries(error)
       .map(([field, value]) => `${field}: ${formatApiError(value)}`)
       .join("\n");

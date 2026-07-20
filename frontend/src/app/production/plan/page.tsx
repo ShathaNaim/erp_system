@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import type { Product } from "@/components/product-creation-form";
 import { apiUrl } from "@/lib/api-base";
+import { getActionErrorMessage } from "@/lib/api";
 
 type ProductionOrder = {
   id: number;
@@ -110,7 +111,7 @@ export default function PlanProductionPage() {
     });
 
     if (!res.ok) {
-      alert("Failed to create production order");
+      alert(getActionErrorMessage(res, "Failed to create production order"));
       return;
     }
 

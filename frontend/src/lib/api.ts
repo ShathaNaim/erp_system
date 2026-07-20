@@ -2,6 +2,17 @@ import { apiUrl } from "@/lib/api-base";
 
 const tokenRefreshUrl = apiUrl("/api/accounts/token/refresh/");
 
+export function getActionErrorMessage(
+  response: Response,
+  fallbackMessage: string
+) {
+  if (response.status === 403) {
+    return "Demo account is read-only. Changes are not allowed.";
+  }
+
+  return fallbackMessage;
+}
+
 export function getAuthHeaders(): Record<string, string> {
   const token = localStorage.getItem("access_token");
   return token ? { Authorization: `Bearer ${token}` } : {};

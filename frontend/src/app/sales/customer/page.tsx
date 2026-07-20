@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { apiUrl } from "@/lib/api-base";
+import { getActionErrorMessage } from "@/lib/api";
 import AddCustomerForm, {
   Customer,
 } from "@/components/add-customer-form";
@@ -75,7 +76,7 @@ export default function CustomerPage() {
     });
 
     if (!res.ok) {
-      alert("Failed to update customer");
+      alert(getActionErrorMessage(res, "Failed to update customer"));
       return;
     }
 

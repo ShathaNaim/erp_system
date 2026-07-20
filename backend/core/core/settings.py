@@ -17,14 +17,23 @@ from urllib.parse import parse_qsl, unquote, urlparse
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 ENV_PATH = BASE_DIR / ".env"
+LOCAL_ENV_PATH = BASE_DIR / ".env.local"
 
-if ENV_PATH.exists():
-    for line in ENV_PATH.read_text().splitlines():
+
+def load_env_file(path):
+    if not path.exists():
+        return
+
+    for line in path.read_text().splitlines():
         line = line.strip()
         if not line or line.startswith("#") or "=" not in line:
             continue
         key, value = line.split("=", 1)
         os.environ[key.strip()] = value.strip().strip("\"'")
+
+
+load_env_file(ENV_PATH)
+load_env_file(LOCAL_ENV_PATH)
 
 
 def env_bool(name, default=False):

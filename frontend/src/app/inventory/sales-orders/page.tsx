@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { apiUrl } from "@/lib/api-base";
+import { getActionErrorMessage } from "@/lib/api";
 
 type InventoryCheck = {
   product_id: number;
@@ -120,7 +121,7 @@ export default function InventorySalesOrdersPage() {
       });
 
       if (!res.ok) {
-        alert("Failed to create production order");
+        alert(getActionErrorMessage(res, "Failed to create production order"));
         return;
       }
 

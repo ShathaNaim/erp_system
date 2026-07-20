@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { apiUrl } from "@/lib/api-base";
+import { getActionErrorMessage } from "@/lib/api";
 
 export type Customer = {
   id: number;
@@ -55,7 +56,7 @@ export default function AddCustomerForm({
     });
 
     if (!res.ok) {
-      alert("Failed to save customer");
+      alert(getActionErrorMessage(res, "Failed to save customer"));
       return;
     }
 

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { apiUrl } from "@/lib/api-base";
+import { getActionErrorMessage } from "@/lib/api";
 import ProductCreationForm, {
   Product,
 } from "@/components/product-creation-form";
@@ -144,7 +145,7 @@ export default function ProductionProductsPage() {
     });
 
     if (!res.ok) {
-      alert("Failed to save bill of material");
+      alert(getActionErrorMessage(res, "Failed to save bill of material"));
       return;
     }
 

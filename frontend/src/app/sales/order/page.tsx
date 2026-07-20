@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import type { Customer } from "@/components/add-customer-form";
 import { showConfirm } from "@/components/AppNotifications";
 import { apiUrl } from "@/lib/api-base";
+import { getActionErrorMessage } from "@/lib/api";
 import AddOrderForm, {
   FinishedProduct,
   SalesOrder,
@@ -69,7 +70,7 @@ export default function OrderPage() {
       });
 
       if (!res.ok) {
-        alert("Failed to confirm sales order");
+        alert(getActionErrorMessage(res, "Failed to confirm sales order"));
         return;
       }
 

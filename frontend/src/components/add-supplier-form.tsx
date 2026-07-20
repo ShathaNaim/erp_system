@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { apiUrl } from "@/lib/api-base";
+import { getActionErrorMessage } from "@/lib/api";
 
 export type Supplier = {
   id: number;
@@ -54,12 +55,12 @@ export default function AddSupplierForm({
     );
 
     if (res.status === 403) {
-      alert("You do not have permission to create suppliers");
+      alert(getActionErrorMessage(res, "You do not have permission to create suppliers"));
       return;
     }
 
     if (!res.ok) {
-      alert("Failed to save supplier");
+      alert(getActionErrorMessage(res, "Failed to save supplier"));
       return;
     }
 

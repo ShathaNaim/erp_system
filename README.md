@@ -20,3 +20,22 @@ This project is a web-based Enterprise Resource Planning (ERP) system designed t
 - **Backend:** Django and Django REST Framework
 - **Authentication:** JSON Web Tokens (JWT)
 - **Database:** PostgreSQL
+
+## Demo Account
+
+Create or refresh the read-only demo account with:
+
+```bash
+cd backend/core
+python manage.py create_demo_account
+```
+
+The sign-in page can then fill in the public demo credentials. The demo user can
+view every ERP module, but API requests that create, update, or delete data are
+blocked.
+
+## Local Development
+
+Local backend settings can be placed in `backend/core/.env.local`. This
+git-ignored file overrides `backend/core/.env` on the developer's machine, so
+deployment database, host, and security settings remain unchanged.

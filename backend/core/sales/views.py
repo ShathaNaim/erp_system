@@ -12,13 +12,21 @@ from .serializer import (
     SalesOrderLineSerializer,
 )
 from .services import confirm_and_route_sales_order
-from accounts.permissions import IsSalesEmployee, IsSalesManager
+from accounts.permissions import (
+    DemoReadOnlyPermission,
+    IsSalesEmployee,
+    IsSalesManager,
+)
 
 
 class CustomerViewSet(viewsets.ModelViewSet):
     queryset = Customer.objects.all()
     serializer_class = CustomerSerializer
-    permission_classes = [IsAuthenticated, IsSalesEmployee | IsSalesManager]
+    permission_classes = [
+        IsAuthenticated,
+        DemoReadOnlyPermission,
+        IsSalesEmployee | IsSalesManager,
+    ]
 
     def destroy(self, request, *args, **kwargs):
         try:
@@ -32,7 +40,11 @@ class CustomerViewSet(viewsets.ModelViewSet):
 class SalesOrderViewSet(viewsets.ModelViewSet):
     queryset = SalesOrder.objects.all()
     serializer_class = SalesOrderSerializer
-    permission_classes = [IsAuthenticated, IsSalesEmployee | IsSalesManager]
+    permission_classes = [
+        IsAuthenticated,
+        DemoReadOnlyPermission,
+        IsSalesEmployee | IsSalesManager,
+    ]
 
     def update(self, request, *args, **kwargs):
         sales_order = self.get_object()
@@ -74,10 +86,18 @@ class SalesOrderViewSet(viewsets.ModelViewSet):
 class SalesOrderLineViewSet(viewsets.ModelViewSet):
     queryset = SalesOrderLine.objects.all()
     serializer_class = SalesOrderLineSerializer
-    permission_classes = [IsAuthenticated, IsSalesEmployee | IsSalesManager]
+    permission_classes = [
+        IsAuthenticated,
+        DemoReadOnlyPermission,
+        IsSalesEmployee | IsSalesManager,
+    ]
 
 
 class FinishedProductViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = FinishedProduct.objects.filter(is_active=True).order_by("name")
     serializer_class = FinishedProductSerializer
-    permission_classes = [IsAuthenticated, IsSalesEmployee | IsSalesManager]
+    permission_classes = [
+        IsAuthenticated,
+        DemoReadOnlyPermission,
+        IsSalesEmployee | IsSalesManager,
+    ]

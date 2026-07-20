@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { apiUrl } from "@/lib/api-base";
+import { getActionErrorMessage } from "@/lib/api";
 
 type FinishedProductStock = {
   id: number;
@@ -186,7 +187,7 @@ export default function CheckProductPage() {
       });
 
       if (!res.ok) {
-        alert("Failed to create production order");
+        alert(getActionErrorMessage(res, "Failed to create production order"));
         return;
       }
 

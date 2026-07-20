@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { showConfirm } from "@/components/AppNotifications";
 import { apiUrl } from "@/lib/api-base";
+import { getActionErrorMessage } from "@/lib/api";
 import PurchaseOrderForm, {
   SavedPurchaseOrder,
 } from "@/components/purchase-order-form";
@@ -61,7 +62,7 @@ export default function PurchaseOrderPage() {
       );
 
       if (!res.ok) {
-        alert("Failed to receive purchase order");
+        alert(getActionErrorMessage(res, "Failed to receive purchase order"));
         return;
       }
 

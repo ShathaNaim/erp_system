@@ -1,6 +1,19 @@
-from rest_framework.permissions import BasePermission
+from rest_framework.permissions import BasePermission, SAFE_METHODS
 
 from .models import EmployeeProfile
+
+
+class DemoReadOnlyPermission(BasePermission):
+    """Allow demo-group users to read API data but never change it."""
+
+    message = "Demo account is read-only. Changes are not allowed."
+
+    def has_permission(self, request, view):
+        if not request.user or not request.user.is_authenticated:
+            return True
+
+        is_demo_user = request.user.groups.filter(name="demo_readonly").exists()
+        return not is_demo_user or request.method in SAFE_METHODS
 
 
 class EmployeePermission(BasePermission):
@@ -63,5 +76,3 @@ class IsProductionManager(EmployeePermission):
 
 class IsProductionEmployee(EmployeePermission):
     allowed_departments = [EmployeeProfile.Department.PRODUCTION]
-
-
